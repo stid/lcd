@@ -1,0 +1,49 @@
+# CI for the published plugin repo, where this directory is the repo root (the dev
+# harness publishes via `git subtree split` — see CONTRIBUTING). Paths are written for
+# that layout; inside the dev repo this file is inert (workflows only run from the
+# repo root) and the dev repo's own CI covers the same suite via its aggregator.
+#
+# Deterministic only — no job here calls a model API. Eval evidence for prompt-touching
+# PRs is produced locally by the contributor (see CONTRIBUTING).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    name: fixture tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run fixture tests
+        run: tests/run.sh
+
+  manifests:
+    name: manifest sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JSON parses
+        run: |
+          jq -e .name .claude-plugin/plugin.json
+          jq -e .name .claude-plugin/marketplace.json
+          jq -e . hooks/hooks.json 2>/dev/null || [ ! -f hooks/hooks.json ]
+      - name: Versions agree
+        run: |
+          p="$(jq -r .version .claude-plugin/plugin.json)"
+          m="$(jq -r '.plugins[0].version' .claude-plugin/marketplace.json)"
+          [ "$p" = "$m" ] || { echo "plugin.json ($p) != marketplace.json ($m)"; exit 1; }
+
+  plugin-validate:
+    name: claude plugin validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate plugin structure
+        run: npx -y @anthropic-ai/claude-code plugin validate .

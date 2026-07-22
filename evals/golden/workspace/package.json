@@ -1,0 +1,7 @@
+{
+  "name": "stats-golden",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}

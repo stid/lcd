@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "lcd",
+  "displayName": "Lean Context Development",
+  "version": "0.13.1",
+  "description": "Context-economy agentic dev methodology: process weight adapts to the work (Quick / Standard / Deep lanes) and durable artifacts make a context reset cheap.",
+  "author": {
+    "name": "stid"
+  },
+  "license": "MIT",
+  "keywords": [
+    "methodology",
+    "workflow",
+    "spec-driven",
+    "tdd",
+    "context-management",
+    "agentic"
+  ],
+  "homepage": "https://github.com/stid/lcd",
+  "repository": "https://github.com/stid/lcd"
+}

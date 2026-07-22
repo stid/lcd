@@ -1,0 +1,32 @@
+# Maintainer-triggered eval run (workflow_dispatch only — never runs on push/PR).
+# Costs real API tokens: requires the ANTHROPIC_API_KEY repo secret, which fork PRs
+# never receive, so this is maintainer-only by construction. Contributors run evals
+# locally with their own key instead — see CONTRIBUTING (evidence-in-PR policy).
+name: Eval (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      arm:
+        description: "Arm label for the results row"
+        required: true
+        default: "main"
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ARM: ${{ inputs.arm }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require API key secret
+        run: |
+          [ -n "$ANTHROPIC_API_KEY" ] || { echo "ANTHROPIC_API_KEY secret not set — refusing"; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Run one benchmark arm
+        run: evals/run-eval.sh --arm "$ARM"

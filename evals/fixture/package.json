@@ -1,0 +1,10 @@
+{
+  "name": "records-sandbox",
+  "version": "1.0.0",
+  "description": "Tiny records app with a CLI and an HTTP surface sharing one core module.",
+  "private": true,
+  "main": "core.js",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}
