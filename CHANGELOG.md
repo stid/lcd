@@ -6,6 +6,19 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [Unreleased]
+
+### Fixed
+- **README lane table stated the wrong Deep-routing rule.** It read "4+ signals, or architecture /
+  parallel surfaces / EVAL / irreversibility", i.e. the pre-risk-gate rule where soft-signal
+  accumulation alone reaches Deep. The implementation (`skills/triage/SKILL.md`), `rules/lcd.md`,
+  `docs/why-lcd.md` (pillar 5) and `docs/vs-sdd.md` all specify risk-gated routing: any hard
+  trigger → Deep, otherwise 4+ → Deep only when a risk signal (irreversibility or multi-session
+  cold-pickup) is among them; pure accumulation caps at Standard. The front door was telling
+  readers to over-route the exact case LCD exists to keep light.
+- **Stale install conditional**: "Once published to a marketplace" → "From the marketplace"
+  (LCD is published).
+
 ## [0.13.1] — 2026-07-21
 
 Publish-polish: the doc-accuracy pass from the publish-readiness review. No behaviour change.

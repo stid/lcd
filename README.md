@@ -35,10 +35,12 @@ A single front door (`/lcd:triage`) scores the work on six signals and routes it
 |---|---|---|
 | **Quick** | 0–1 signals — a one-sitting change | No artifacts, no ceremony. Implement directly (TDD still applies). |
 | **Standard** | 2–3 signals — may span a session | One resumable `JOURNAL.md`: granular STEPS, edit boundary, TDD, optional inline ACs. |
-| **Deep** | 4+ signals, or architecture / parallel surfaces / EVAL / irreversibility | The full pipeline: `spec → plan → tasks → test-gen → red-green → audit`, with a cross-path coverage gate. |
+| **Deep** | Any hard trigger — architecture / parallel surfaces / EVAL / irreversibility — or 4+ signals *with a risk signal among them* | The full pipeline: `spec → plan → tasks → test-gen → red-green → audit`, with a cross-path coverage gate. |
 
 Signals: files touched · architecture impact · surfaces · reversibility · cold-pickup plausibility ·
-silently-wrong risk. Ties round **down** — when in doubt, the lighter lane.
+silently-wrong risk. Ties round **down** — when in doubt, the lighter lane. Routing for 4+ is
+risk-gated: without a risk signal (irreversibility or multi-session cold-pickup), pure signal
+accumulation **caps at Standard** — file count alone never buys the heavy pipeline.
 
 ## Durable spine
 
@@ -58,7 +60,7 @@ silently-wrong risk. Ties round **down** — when in doubt, the lighter lane.
 
 ## Install
 
-Once published to a marketplace:
+From the marketplace:
 
 ```
 /plugin marketplace add stid/lcd
