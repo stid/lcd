@@ -8,6 +8,12 @@ cite them for traceability.
 
 ## [Unreleased]
 
+### Added
+- **README "Self-measuring" section**: documents the eval harness as a first-class property of
+  the methodology — golden-locked grader, evidence-in-PR policy, and the A/B arms that decided
+  real design questions. Process benchmarks are a named field-wide gap (arXiv 2606.04967);
+  LCD publishes its own.
+
 ### Changed
 - **Fan-out gate sharpened to test-independence.** The Deep-lane fan-out guardrail gated on
   the surfaces being genuinely independent, defined as disjoint boundaries; disjoint file boundaries don't prove
