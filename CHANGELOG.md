@@ -8,6 +8,15 @@ cite them for traceability.
 
 ## [Unreleased]
 
+### Changed
+- **Fan-out gate sharpened to test-independence.** The Deep-lane fan-out guardrail said
+  "genuinely independent surfaces (disjoint boundaries)"; disjoint file boundaries don't prove
+  the *work* is independent. The gate is now literal: fan out only when the committed baseline's
+  failing tests partition the work — each surface's `AC-N (SURFACE)` tests passable without
+  touching another surface's boundary. Matches the published evidence on when parallel
+  implementers work (independent failing tests) vs. degrade (agents re-solving one shared
+  problem). `skills/triage/SKILL.md` + `references/fanout.md`; wording only, no mechanics change.
+
 ### Fixed
 - **README lane table stated the wrong Deep-routing rule.** It read "4+ signals, or architecture /
   parallel surfaces / EVAL / irreversibility", i.e. the pre-risk-gate rule where soft-signal
