@@ -100,7 +100,7 @@ they can never break an un-onboarded project):
 ## Self-measuring
 
 LCD's skills are prompts, so their quality is model-behavioral — measured, not asserted. The
-plugin ships its own benchmark: [`evals/run-eval.sh`](evals/) drives a full non-interactive
+plugin ships its own benchmark: [`evals/run-eval.sh`](evals/run-eval.sh) drives a full non-interactive
 Deep-lane run against a frozen fixture and a chosen plugin variant, and a golden-locked grader
 emits one comparable result row per run (audit outcome, suite state, build-loop commits, token
 cost; rows compare only within one model id). Prompt changes ship with an eval row as evidence,
