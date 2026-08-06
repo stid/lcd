@@ -9,8 +9,8 @@ cite them for traceability.
 ## [Unreleased]
 
 ### Changed
-- **Fan-out gate sharpened to test-independence.** The Deep-lane fan-out guardrail said
-  "genuinely independent surfaces (disjoint boundaries)"; disjoint file boundaries don't prove
+- **Fan-out gate sharpened to test-independence.** The Deep-lane fan-out guardrail gated on
+  the surfaces being genuinely independent, defined as disjoint boundaries; disjoint file boundaries don't prove
   the *work* is independent. The gate is now literal: fan out only when the committed baseline's
   failing tests partition the work — each surface's `AC-N (SURFACE)` tests passable without
   touching another surface's boundary. Matches the published evidence on when parallel
