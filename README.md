@@ -100,6 +100,18 @@ they can never break an un-onboarded project):
 - **CI audit gate (opt-in at onboarding)** — a vendored GitHub Actions workflow enforces the
   cross-path audit on PRs for every contributor, not just well-behaved sessions.
 
+## Self-measuring
+
+LCD's skills are prompts, so their quality is model-behavioral — measured, not asserted. The
+plugin ships its own benchmark: [`evals/run-eval.sh`](evals/run-eval.sh) drives a full non-interactive
+Deep-lane run against a frozen fixture and a chosen plugin variant, and a golden-locked grader
+emits one comparable result row per run (audit outcome, suite state, build-loop commits, token
+cost; rows compare only within one model id). Prompt changes ship with an eval row as evidence,
+and A/B arms have decided real design questions — step enumeration was dropped from three phase
+commands and kept in `test-gen` on measured cost and quality, not taste. A 2026 survey of
+spec-driven frameworks (arXiv 2606.04967) names the absence of process benchmarks as a
+field-wide gap; LCD's harness is its answer for its own process.
+
 ## Learn more
 
 - [`docs/why-lcd.md`](docs/why-lcd.md) — the idea behind LCD and its eight pillars.

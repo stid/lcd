@@ -29,7 +29,7 @@ export const meta = {
 
 const { slug, surfaces, testCmd } = args
 
-// Shared per-surface digest contract (see triage SKILL "Per-surface implementer digest").
+// Shared per-surface digest contract (see skills/triage/references/fanout.md "Per-surface implementer digest").
 const DIGEST = {
   type: 'object',
   required: ['surface', 'filesChanged', 'acsCovered', 'notes', 'worktreeBranch'],

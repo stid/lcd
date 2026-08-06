@@ -2,7 +2,10 @@
 
 > Loaded on demand from `lcd:triage` — the routing rule (when a fan-out is worth its token
 > multiple) lives in SKILL.md; this file is the *how*. Precondition: a committed baseline
-> (spec/plan/tasks + failing tests) and disjoint per-surface EDIT BOUNDARY rows.
+> (spec/plan/tasks + failing tests) whose failing tests partition the work by surface — each
+> surface's `AC-N (SURFACE)` tests passable without touching another surface's boundary — and
+> disjoint per-surface EDIT BOUNDARY rows. If the tests don't partition, the work isn't
+> independent; don't fan out.
 
 Two ways to run the fan-out — both make the boundary *structural*, not merely instructed:
 

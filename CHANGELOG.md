@@ -19,6 +19,19 @@ cite them for traceability.
   judging its own work confidently praises it, and test passage alone can't distinguish a
   correct implementation from a degenerate one. The gate stays mechanical; this is the
   independent semantic half, priced as one opt-in subagent call per closeout.
+- **README "Self-measuring" section**: documents the eval harness as a first-class property of
+  the methodology — golden-locked grader, evidence-in-PR policy, and the A/B arms that decided
+  real design questions. Process benchmarks are a named field-wide gap (arXiv 2606.04967);
+  LCD publishes its own.
+
+### Changed
+- **Fan-out gate sharpened to test-independence.** The Deep-lane fan-out guardrail gated on
+  the surfaces being genuinely independent, defined as disjoint boundaries; disjoint file boundaries don't prove
+  the *work* is independent. The gate is now literal: fan out only when the committed baseline's
+  failing tests partition the work — each surface's `AC-N (SURFACE)` tests passable without
+  touching another surface's boundary. Matches the published evidence on when parallel
+  implementers work (independent failing tests) vs. degrade (agents re-solving one shared
+  problem). `skills/triage/SKILL.md` + `references/fanout.md`; wording only, no mechanics change.
 
 ### Fixed
 - **README lane table stated the wrong Deep-routing rule.** It read "4+ signals, or architecture /
