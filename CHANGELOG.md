@@ -8,6 +8,18 @@ cite them for traceability.
 
 ## [Unreleased]
 
+### Added
+- **Opt-in independent closeout evaluator** (`closeout-evaluator: on` in lcd-conventions, off by
+  default): at a Standard/Deep work-item's closeout, after the audit gate passes, the new
+  read-only `agents/lcd-evaluator.md` runs in a fresh context and tries to REFUTE the green
+  suite — degenerate passes (a test a stub would satisfy), untested AC behaviour, suite-blind
+  diff hunks, invariant violations — returning `file:line`-grounded findings. Advisory: the
+  verdict lands in the JOURNAL LOG and in front of the user before any PR; it doesn't reopen
+  the audit result. Rationale: maker ≠ checker is the current verification consensus — an agent
+  judging its own work confidently praises it, and test passage alone can't distinguish a
+  correct implementation from a degenerate one. The gate stays mechanical; this is the
+  independent semantic half, priced as one opt-in subagent call per closeout.
+
 ### Fixed
 - **README lane table stated the wrong Deep-routing rule.** It read "4+ signals, or architecture /
   parallel surfaces / EVAL / irreversibility", i.e. the pre-risk-gate rule where soft-signal

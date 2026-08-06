@@ -117,6 +117,14 @@ same edit that marks the JOURNAL done. `/lcd:tidy` reads both line shapes and fl
 miscalibrations — this is what turns the lane thresholds from designed constants into data-tuned
 ones.
 
+**Independent evaluation at closeout (when `closeout-evaluator: on`).** After the audit gate
+passes and before the closeout line, dispatch the plugin's `lcd-evaluator` agent (read-only,
+fresh context) with the slug, ACs, and baseline..HEAD diff. It attempts to refute the green
+suite — degenerate passes, untested AC behaviour, suite-blind changes — and returns `file:line`
+findings. Record the verdict in the JOURNAL LOG; findings are advisory but surface them before
+any PR. Off by default: the same session that wrote the code judging it done is the failure mode
+this key exists to remove.
+
 **Compaction at closeout (when `living-spec: on`).** Right after the closeout line, invoke
 `lcd:reconcile <slug>` to fold this work-item's ACs into `<artifact-root>/SPEC.md` — so the
 living current-state index stays current and the next triage reads it instead of replaying the

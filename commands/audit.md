@@ -38,6 +38,14 @@ Target slug: `$ARGUMENTS`
    living current-state index). It's a no-op when the flag is off, so this step is safe to run
    unconditionally — but only the PASS branch reaches it.
 
+   Then, **if the conventions block has `closeout-evaluator: on`**, dispatch the plugin's
+   `lcd-evaluator` agent (read-only, fresh context) with the slug, the artifact root, the ACs,
+   and the baseline..HEAD diff range. Record its result in the JOURNAL LOG —
+   `evaluator: stands` or `evaluator: challenged (<n> findings)` plus the findings verbatim —
+   and present the findings to the user **before** suggesting `gh pr create`. The verdict is
+   advisory (it doesn't reopen the audit result), but a `challenged` verdict means fix-then-PR
+   is the sane order. Skip when the key is `off` or absent.
+
 5. **If the script exited non-zero (any MISSING / BLOCKED):** set `Result: BLOCKED`; print the table with a clear "PR creation blocked" message; for each non-OK row explain the fix:
    - `MISSING-HANDLER` → plan-declared path doesn't resolve. Wire the handler, or fix the plan's path cell. For `EVAL`, curate the golden-dataset file at the declared path.
    - `MISSING-TEST` → handler resolves but no test carries `AC-N (SURFACE)`. Re-run `/lcd:test-gen` or rename an existing test to match exactly.

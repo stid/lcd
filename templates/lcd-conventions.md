@@ -16,6 +16,7 @@ map: <ARTIFACT_ROOT>/MAP.md
 decisions: <ARTIFACT_ROOT>/DECISIONS.md
 spec: <ARTIFACT_ROOT>/SPEC.md
 living-spec: off
+closeout-evaluator: off
 work-item-dir: <ARTIFACT_ROOT>/work/<slug>
 test-placement: <TEST_PLACEMENT>
 test-discovery-glob: <DISCOVERY_GLOB>
@@ -40,6 +41,13 @@ Key meanings:
   `lcd:reconcile` folds each closed Standard/Deep work-item into `SPEC.md` at closeout, and
   `lcd:triage` reads the relevant surface section before scoping new work. `spec` is the
   resolved path, derived from `artifact-root`.
+- **closeout-evaluator** — opt-in independent check at Standard/Deep closeout (`off` by
+  default). When `on`, the closeout (after the audit gate passes) dispatches the read-only
+  `lcd-evaluator` agent — a fresh context prompted to refute the green suite (degenerate
+  passes, untested AC behaviour, suite-blind changes) with `file:line` findings. Advisory:
+  the verdict goes to the JOURNAL LOG and the user before the PR; it doesn't reopen the audit
+  result. The session that wrote the code judging it done is the failure mode this key removes —
+  turn it on where a silently-wrong pass is expensive.
 - **test-placement** — where the Deep lane's `/lcd:test-gen` must write tests so this
   project's runner actually collects them. `<area>`, `<Name>`, `<slug>`, `<surface>` are filled per test.
 - **test-discovery-glob** — the runner's own include pattern; the reason placement matters.
