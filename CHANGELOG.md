@@ -6,7 +6,11 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
-## [Unreleased]
+## [0.14.0] — 2026-08-05
+
+The 2026-08 industry-review pass: maker ≠ checker lands as an opt-in closeout evaluator, the
+fan-out gate gets its evidence-matched wording, and the eval harness moves to the README front
+door. All three changes were themselves gated by an adversarial multi-agent pre-merge review.
 
 ### Added
 - **Opt-in independent closeout evaluator** (`closeout-evaluator: on` in lcd-conventions, off by
