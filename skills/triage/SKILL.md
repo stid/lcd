@@ -180,10 +180,13 @@ For **parallel independent surfaces**, you MAY fan out one implementer subagent 
 scoped to its EDIT BOUNDARY rows (the orchestrator holds only the per-surface digests, never the
 bulk diffs). **Fan-out must earn its token multiple:** a subagent-per-surface run costs several
 times a single-session build (Anthropic's own multi-agent measurements put such flows at many times
-single-session token use). Fan out only when the surfaces are genuinely independent (disjoint
-boundaries) AND at least two are individually substantial. Surfaces that share most of one code
-path, or a feature one sitting covers sequentially, stay in-session — the pipeline above is fully
-Deep with zero subagents.
+single-session token use). The gate is **test-independence**: fan out only when the committed
+baseline's failing tests already partition the work — each surface's `AC-N (SURFACE)` tests can be
+made to pass without touching another surface's boundary — AND at least two surfaces are
+individually substantial. (This is the condition under which parallel implementers demonstrably
+work; when the work collapses into one shared problem, parallel agents re-solve each other's task.)
+Surfaces that share most of one code path, or a feature one sitting covers sequentially, stay
+in-session — the pipeline above is fully Deep with zero subagents.
 
 When fan-out is warranted: **commit a baseline first** (spec/plan/tasks + failing tests), then read
 `${CLAUDE_PLUGIN_ROOT}/skills/triage/references/fanout.md` at that moment — it carries the
