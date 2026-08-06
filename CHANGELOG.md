@@ -6,7 +6,7 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
-## [Unreleased]
+## [0.14.1] — 2026-08-05
 
 ### Fixed
 - **`tests/helpers.sh` `sedi()` silently dropped the executable bit**: the write-temp + `mv`
