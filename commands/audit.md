@@ -25,7 +25,19 @@ Target slug: `$ARGUMENTS`
 
 3. **Save the audit output** to `<artifact-root>/work/<slug>/audit.md` using `${CLAUDE_PLUGIN_ROOT}/templates/audit.md`. Fill the metadata (slug, run timestamp, PASS/BLOCKED) and paste the table from step 2.
 
-4. **If the script exited 0 (all OK):** set `Result: PASS`; tell the user "Audit PASSED. Safe to open PR."; suggest committing anything pending and running the full gate before `gh pr create`. Mark `audit.md ✅` in the JOURNAL pipeline tracker. Then **append the work-item's closeout line** to `<artifact-root>/triage-log.md` (contract in the `lcd:triage` skill, "Closeout" section):
+4. **If the script exited 0 (all OK):** set `Result: PASS`; tell the user "Audit PASSED. Safe to open PR."; suggest committing anything pending and running the full gate before `gh pr create`. Mark `audit.md ✅` in the JOURNAL pipeline tracker.
+
+   Then, **if the conventions block has `closeout-evaluator: on`**, dispatch the plugin's
+   `lcd-evaluator` agent (read-only, fresh context) with the slug, the artifact root, the ACs,
+   and the baseline..HEAD diff range — **before** the closeout line and the reconcile fold, so
+   a challenged verdict lands before the closeout is logged and before the ACs are folded into
+   `SPEC.md`. Record its result in the JOURNAL LOG — `evaluator: stands` or
+   `evaluator: challenged (<n> findings)` plus the findings verbatim — and present the findings
+   to the user **before** suggesting `gh pr create`. The verdict is advisory (it doesn't reopen
+   the audit result), but on `challenged` the sane order is fix, re-audit, and only then close
+   out. Skip when the key is `off` or absent.
+
+   Then **append the work-item's closeout line** to `<artifact-root>/triage-log.md` (contract in the `lcd:triage` skill, "Closeout" section):
 
    ```
    <date> · <slug> · closeout · <Lane> · audit: PASS (first run | run N) · re-routes: <n> · red-green iters: <n> · interventions: <n>

@@ -9,6 +9,16 @@ cite them for traceability.
 ## [Unreleased]
 
 ### Added
+- **Opt-in independent closeout evaluator** (`closeout-evaluator: on` in lcd-conventions, off by
+  default): at a Standard/Deep work-item's closeout, after the audit gate passes, the new
+  read-only `agents/lcd-evaluator.md` runs in a fresh context and tries to REFUTE the green
+  suite — degenerate passes (a test a stub would satisfy), untested AC behaviour, suite-blind
+  diff hunks, invariant violations — returning `file:line`-grounded findings. Advisory: the
+  verdict lands in the JOURNAL LOG and in front of the user before any PR; it doesn't reopen
+  the audit result. Rationale: maker ≠ checker is the current verification consensus — an agent
+  judging its own work confidently praises it, and test passage alone can't distinguish a
+  correct implementation from a degenerate one. The gate stays mechanical; this is the
+  independent semantic half, priced as one opt-in subagent call per closeout.
 - **README "Self-measuring" section**: documents the eval harness as a first-class property of
   the methodology — golden-locked grader, evidence-in-PR policy, and the A/B arms that decided
   real design questions. Process benchmarks are a named field-wide gap (arXiv 2606.04967);
