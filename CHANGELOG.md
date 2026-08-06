@@ -6,6 +6,15 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [Unreleased]
+
+### Fixed
+- **`tests/helpers.sh` `sedi()` silently dropped the executable bit**: the write-temp + `mv`
+  pattern replaced the target file with the temp file's default mode, so any fixture test that
+  `sedi`-edited an executable stripped its `+x`. Now cat-over (keeps the target's inode and
+  mode). Regression-tested in the new `tests/test-helpers.sh`, which covers the shared test
+  lib itself. (Found during the 2026-07 publish run; ported from the dev harness.)
+
 ## [0.14.0] — 2026-08-05
 
 The 2026-08 industry-review pass: maker ≠ checker lands as an opt-in closeout evaluator, the

@@ -39,5 +39,6 @@ init_tmpdir() {
 sedi() {
   local f="${@: -1}" tmp_f
   tmp_f="${f}.sedi.$$"
-  sed "${@:1:$#-1}" "$f" > "$tmp_f" && mv "$tmp_f" "$f" || { rm -f "$tmp_f"; return 1; }
+  # cat-over (not mv) keeps the target's inode and mode — mv silently drops the exec bit.
+  sed "${@:1:$#-1}" "$f" > "$tmp_f" && cat "$tmp_f" > "$f" && rm -f "$tmp_f" || { rm -f "$tmp_f"; return 1; }
 }
