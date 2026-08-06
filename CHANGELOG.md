@@ -8,6 +8,12 @@ cite them for traceability.
 
 ## [Unreleased]
 
+### Added
+- **README "Self-measuring" section**: documents the eval harness as a first-class property of
+  the methodology — golden-locked grader, evidence-in-PR policy, and the A/B arms that decided
+  real design questions. Process benchmarks are a named field-wide gap (arXiv 2606.04967);
+  LCD publishes its own.
+
 ### Fixed
 - **README lane table stated the wrong Deep-routing rule.** It read "4+ signals, or architecture /
   parallel surfaces / EVAL / irreversibility", i.e. the pre-risk-gate rule where soft-signal
