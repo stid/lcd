@@ -93,11 +93,27 @@ lcd_active_journals() {
 
 # lcd_journal_boundary <journal> — print the EDIT BOUNDARY entries, one per line,
 # backticks/bullets stripped. Placeholder entries (containing `<`) are skipped.
+#
+# One bullet may carry more than one path (`- a.md, b.md`) or a trailing note
+# (`- a.md (deleted)`) — humans write boundaries that way, and treating the whole bullet
+# as one path silently denies every edit it lists. So: split on commas, drop a trailing
+# parenthesised note. A brace glob (`{src,lib}/**`) keeps its commas — there they are
+# pattern, not separator — and `(group)` path segments are untouched because a note is
+# only recognised after whitespace.
 lcd_journal_boundary() {
   local j="$1"
   awk '/^## EDIT BOUNDARY/{f=1; next} /^## /{f=0} /<!-- \/lcd-resume -->/{f=0} f' "$j" \
     | sed -n 's/^- *//p' \
     | tr -d '`' \
-    | sed 's/[[:space:]]*$//' \
-    | grep -v '<' || true
+    | awk '
+        {
+          n = (index($0, "{") > 0) ? 0 : split($0, part, /,[[:space:]]*/)
+          if (n == 0) { n = 1; part[1] = $0 }
+          for (i = 1; i <= n; i++) {
+            e = part[i]
+            sub(/[[:space:]]+\(.*\)[[:space:]]*$/, "", e)
+            sub(/^[[:space:]]+/, "", e); sub(/[[:space:]]+$/, "", e)
+            if (e != "" && index(e, "<") == 0) print e
+          }
+        }' || true
 }

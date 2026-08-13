@@ -29,6 +29,9 @@ cat > "$proj/docs/lcd/work/export-csv/JOURNAL.md" <<'EOF'
 ## EDIT BOUNDARY (paths this work may touch)
 - `src/export/`
 - `tests/export.test.ts`
+- `docs/notes.md`, `README.md`
+- `LICENSE` (kept for reference)
+- `{src,lib}/shared/**`
 <!-- /lcd-resume -->
 EOF
 
@@ -46,6 +49,25 @@ assert_exit 0 "$code" "in-boundary dir edit allowed"
 
 out="$(run_hook "$proj/tests/export.test.ts")"; code=$?
 [[ -z "$out" ]] || fail "exact boundary file should be allowed, got: $out"
+
+# --- a bullet listing several paths covers each of them ----------------------
+# Authors write `- \`a.md\`, \`b.md\``; matching the bullet as one string denied both.
+out="$(run_hook "$proj/docs/notes.md")"
+[[ -z "$out" ]] || fail "first path of a comma-separated bullet should be allowed, got: $out"
+out="$(run_hook "$proj/README.md")"
+[[ -z "$out" ]] || fail "second path of a comma-separated bullet should be allowed, got: $out"
+
+# --- a trailing (annotation) doesn't break the path --------------------------
+out="$(run_hook "$proj/LICENSE")"
+[[ -z "$out" ]] || fail "annotated boundary entry should still match its path, got: $out"
+
+# --- a brace glob keeps its commas (they are pattern, not a separator) -------
+# Splitting `{src,lib}/shared/**` on its comma would produce two broken half-patterns;
+# the entry must survive whole. (Whether `case` can match a brace pattern is a separate
+# question — it cannot — but a mangled entry would be a silent corruption.)
+out="$(run_hook "$proj/src/other/unrelated.ts")"
+assert_contains "$out" "{src,lib}/shared/**" "brace-glob entry passes through unsplit"
+assert_not_contains "$out" "{src; " "brace-glob entry not split on its comma"
 
 # --- out-of-boundary edit is denied ------------------------------------------
 out="$(run_hook "$proj/src/other/unrelated.ts")"; code=$?

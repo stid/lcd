@@ -6,6 +6,23 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.15.1] — 2026-08-12
+
+### Fixed
+- **The edit-boundary hook now reads a boundary the way people write one.** Entries were matched
+  as whole bullet strings, so `- a.md, b.md` (two paths on one line) and `- a.md (kept for
+  reference)` (a path with a trailing note) matched nothing, and every edit to those files was
+  denied without any hint that the *format* was the problem. Bullets are now split on commas and
+  a trailing parenthesised note is dropped. A brace glob (`{src,lib}/**`) keeps its commas —
+  there they are pattern, not separator — and a `(group)` path segment is untouched, since a note
+  is only recognised after whitespace. Found by dogfooding: the hook denied two legitimate edits
+  during a real work-item (D-023).
+- **`lcd:doctor` accepts `n/a` as an answer for the test keys.** A project with no test suite
+  (docs, prose, a decision-record repo) fills `test-placement` / `test-discovery-glob` with an
+  explicit `n/a`; doctor still ran its placement-vs-glob heuristic on those strings and emitted a
+  permanent WARN that no edit could clear. `n/a` — with or without a reason after it — is now
+  recognised as filled in, and the heuristic is skipped (D-023).
+
 ## [0.15.0] — 2026-08-12
 
 ### Added

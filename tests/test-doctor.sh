@@ -80,4 +80,27 @@ out="$(run_doctor)"; code=$?
 assert_exit 0 "$code" "living-spec on with SPEC.md passes"
 assert_contains "$out" "SPEC.md exists" "SPEC.md presence acknowledged"
 
+# --- a project with no test suite declares n/a → no WARN ---------------------------
+# Docs-only projects fill the test keys with an explicit `n/a`; that is a filled-in
+# answer, not a gap, so the placement-vs-glob heuristic must not warn about it.
+cat > "$proj/.claude/rules/lcd-conventions.md" <<'EOF'
+<!-- lcd-conventions:v1 -->
+artifact-root: docs/lcd
+spec: docs/lcd/SPEC.md
+living-spec: on
+test-placement: n/a — docs-only project, no test suite
+test-discovery-glob: n/a — no tests in this project
+scoped-test: n/a — docs-only project
+bail: n/a — docs-only project
+single-test: n/a — docs-only project
+gate: n/a — docs-only project; prose review is the gate
+eval: n/a — deterministic project
+maintenance-bundle: n/a — nothing to build
+<!-- /lcd-conventions -->
+EOF
+out="$(run_doctor)"; code=$?
+assert_exit 0 "$code" "docs-only project passes"
+assert_contains "$out" "doctor: 0 FAIL, 0 WARN" "n/a test keys produce no WARN"
+assert_not_contains "$out" "may not match discovery glob" "placement heuristic skipped for n/a"
+
 exit 0
