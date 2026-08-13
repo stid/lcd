@@ -25,6 +25,10 @@ get_key() { sed -n "s/^$1:[[:space:]]*//p" "$conv" | head -1; }
 # (`<slug>`, `<surface>`, `<name>`) are legitimate per-test substitution markers.
 is_placeholder() { grep -qE '<[A-Z][A-Z_]*>' <<< "$1"; }
 
+# A key answered with `n/a` (optionally followed by a reason) is FILLED IN, not missing —
+# a docs-only project has no test suite, and saying so is the correct answer.
+is_na() { grep -qiE '^n/?a\b' <<< "$1"; }
+
 # --- the conventions file itself --------------------------------------------
 if [[ ! -f "$conv" ]]; then
   fail "conventions: $conv not found — project is not onboarded (run /lcd:onboard)"
@@ -110,7 +114,9 @@ fi
 # --- placement vs discovery glob (cheap heuristic) -------------------------------
 placement="$(get_key test-placement)"
 glob="$(get_key test-discovery-glob)"
-if [[ -n "$placement" && -n "$glob" ]] && ! is_placeholder "$placement" && ! is_placeholder "$glob"; then
+if is_na "$placement" || is_na "$glob"; then
+  ok "test-placement: n/a — project declares no test suite (glob check skipped)"
+elif [[ -n "$placement" && -n "$glob" ]] && ! is_placeholder "$placement" && ! is_placeholder "$glob"; then
   pext="${placement##*.}"
   if [[ "$glob" == *"$pext"* || "$glob" == *"{"* ]]; then
     ok "test-placement: extension .$pext is covered by discovery glob"
