@@ -6,6 +6,19 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.15.0] — 2026-08-12
+
+### Added
+- **`lcd:onboard` now says when nothing reviews the diff.** Step 1 scans the CI config for a job
+  that reads the changed code (as opposed to one that runs tests and linters), and the completion
+  report states in one line when there isn't one. LCD's own gates cannot cover this by
+  construction: the `gate` command runs the suite and the Deep-lane audit checks that every
+  acceptance criterion has a test, so a defect in code no criterion describes is invisible to both.
+  Measured on a project running the full Deep lane — audit PASS, then a code review of the same
+  branch found seven defects, two severe, all outside the ACs. Onboard reports and moves on: it
+  does not ask a question and does not scaffold a reviewer, since which one and whether it blocks
+  stays the project's call.
+
 ## [0.14.1] — 2026-08-05
 
 ### Fixed

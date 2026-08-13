@@ -34,6 +34,10 @@ triage pointer. **Keep output minimal; retrofit-safe (skip-on-conflict).**
   or major framework lib (from deps), test framework, package manager.
 - **Candidate artifact roots:** existing `docs/`, an ADR dir (`docs/adr/`, `docs/decisions/`),
   monorepo `packages/*`, else none.
+- **Whether anything reviews the diff.** Scan the CI config (`.github/workflows/`, `.gitlab-ci.yml`,
+  or the host's equivalent) for a job that *reads the changed code* — a reviewer action, a required
+  human approval in branch protection — as opposed to jobs that only run tests and linters. Record
+  yes/no; it is reported at the end, not asked about.
 
 ## Step 2 — ONE AskUserQuestion call (artifact placement + CI gate + living spec)
 
@@ -200,5 +204,13 @@ list below mechanically and must report **0 FAIL**. Then confirm:
   that root (otherwise the AC convention never auto-loads).
 - `settings.json` (or `settings.local.json` if the user chose machine-local) still parses as JSON.
 - CLAUDE.md has exactly one LCD pointer; AGENTS.md (if the project has one) too.
+- **If Step 1 found nothing that reviews the diff, say so once, in one line, and move on.** LCD's
+  own gates do not read code: the `gate` command runs the suite, and the Deep-lane audit checks that
+  every acceptance criterion has a test. Neither can see a defect in code no criterion describes, and
+  that is where they are found — on a project that ran the full Deep lane, the audit passed and a
+  code review of the same branch then found seven defects, two of them severe, all outside the ACs.
+  So: "Nothing here reviews the diff — LCD's gates check tests and coverage, not code. Worth adding a
+  review step on PRs." Do not scaffold one and do not ask a question about it; which reviewer, and
+  whether it blocks, is the project's call and outside what this plugin ships.
 - Tell the user the next step: start work normally — `lcd:triage` will auto-route — or run
   `/lcd:onboard` again later to refresh the MAP.
