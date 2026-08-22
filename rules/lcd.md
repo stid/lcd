@@ -31,7 +31,7 @@ Score six signals; route by the count, rounding ties **down**:
 | Cold-pickup | one sitting | may span a session | multi-session |
 | Silently-wrong risk | none | low | scorer/ranker/LLM-output → EVAL |
 
-0–1 → **Quick** · 2–3 → **Standard** · **any hard trigger** (Deep-column hit on architecture / parallel surfaces / EVAL / irreversibility) → **Deep**. Otherwise **4+ → Standard, UNLESS a *risk signal* — irreversibility OR multi-session cold-pickup — is among them → Deep**: pure soft-signal accumulation caps at Standard. The user overrides in one word. File count is **not** a hard Deep trigger — post-1M it's a soft cost proxy, not a fit proxy; resumability and the hard triggers carry the routing.
+0–1 → **Quick** · 2–3 → **Standard** · **any hard trigger** (Deep-column hit on architecture / parallel surfaces / EVAL / irreversibility) → **Deep**. Otherwise **4+ → Standard, UNLESS the *risk signal* — multi-session cold-pickup — is among them → Deep** (Deep-level irreversibility is already a hard trigger, so it never reaches this branch): pure soft-signal accumulation caps at Standard. The user overrides in one word. File count is **not** a hard Deep trigger — post-1M it's a soft cost proxy, not a fit proxy; resumability and the hard triggers carry the routing.
 
 - **Quick** — no artifacts, zero subagents, go direct (TDD still applies). The escape hatch that keeps LCD light.
 - **Standard** — one `JOURNAL.md` per work-item: granular resumable STEPS + inline ACs (only if a surface needs the audit) + TDD + verify. No spec/plan/tasks split.

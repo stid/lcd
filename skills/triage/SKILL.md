@@ -47,8 +47,9 @@ Two terms decide the heavy lane:
 
 - A **hard trigger** is any Deep-column hit on **architecture / parallel-surfaces / EVAL /
   irreversibility** (schema/migration/public API).
-- A **risk signal** is **irreversibility** (as above) **OR multi-session cold-pickup** — the signals
-  whose downstream cost actually warrants the full pipeline.
+- A **risk signal** is **multi-session cold-pickup** — the one soft signal whose downstream cost
+  warrants the full pipeline on its own. (Deep-level irreversibility is already a hard trigger, so
+  it can never reach the count-based branch below.)
 
 Then:
 
