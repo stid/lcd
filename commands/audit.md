@@ -3,7 +3,7 @@ description: LCD Deep lane phase 6 — run when the suite is green, before openi
 argument-hint: "<slug>"
 ---
 
-You are running **Deep-lane phase 6 of Lean Context Development**. This phase is the PR-creation gate: every cross-path AC must be covered before a PR can be opened. See the `lcd:triage` skill for orchestration.
+You are running **the LCD audit** — the PR-creation gate. For the Deep lane this is phase 6 (every cross-path AC covered by a handler AND a test); for a Standard-lane item with inline ACs it is the test-presence half only. See the `lcd:triage` skill for orchestration.
 
 Target slug: `$ARGUMENTS`
 
@@ -11,11 +11,19 @@ Target slug: `$ARGUMENTS`
 
 **Resolve the artifact root** from `.claude/rules/lcd-conventions.md` (`artifact-root`, default `docs/lcd`). The audit script (`audit-crosspath.sh`, on PATH via the plugin's `bin/`) reads `LCD_SPECS_DIR` = `<artifact-root>/work`.
 
-## What to do
+**Pick the lane's path:** `spec.md` + `plan.md` present under `<artifact-root>/work/<slug>/` → Deep lane below. A JOURNAL with inline ACs and no spec/plan (by design) → Standard lane. Neither → refuse and tell the user which phase is missing (`/lcd:specify` / `/lcd:plan`), or that this work-item declared no surface (nothing to audit).
 
-1. **Refuse if `spec.md` or `plan.md` is missing** under `<artifact-root>/work/<slug>/`. Tell the user which phase is missing. **Exception — Standard-lane items** (a JOURNAL with inline ACs, no spec/plan by design): don't refuse and don't run the script — its handler checks need plan.md's cross-path matrix, which Standard doesn't have. The Standard audit is the test-presence half only: for each inline `**AC-N** (surfaces: …)` in the JOURNAL, grep the repo for a passing test carrying the literal `AC-N (SURFACE)`; all present + the suite green = PASS. Record the result in the JOURNAL LOG (no `audit.md` file), then continue at step 4's closeout with `audit: PASS (test-presence)`.
+## Standard lane (test-presence audit)
 
-2. **Run the audit script from the project root**, pointing it at the resolved work dir:
+Don't run the script — its handler checks need plan.md's cross-path matrix, which Standard doesn't have.
+
+1. For each inline `**AC-N** (surfaces: …)` in the JOURNAL, grep the repo for a test carrying the literal `AC-N (SURFACE)` (one per declared surface). Then run the full suite.
+2. **All tokens present + suite green → PASS.** Record `audit: PASS (test-presence)` in the JOURNAL LOG (no `audit.md` file is written), then continue at **On PASS** below.
+3. **Otherwise → BLOCKED.** Name each AC × surface whose token has no test (the fix: write a test, or rename an existing one to carry the exact literal) and any failing test (the fix: back to the build loop). Record `audit: BLOCKED (test-presence): <reason>` in the JOURNAL LOG and stop — a blocked audit gets no closeout line.
+
+## Deep lane
+
+1. **Run the audit script from the project root**, pointing it at the resolved work dir:
 
    ```bash
    LCD_SPECS_DIR="<artifact-root>/work" audit-crosspath.sh <slug>
@@ -23,52 +31,38 @@ Target slug: `$ARGUMENTS`
 
    It reads spec.md ACs (via `parse-acs.sh`), plan.md's Cross-path matrix for the path per (AC × surface), checks each handler (`<file>:<token>` → file exists and contains the token; bare `<file>` → file exists), and greps the repo for a test carrying the literal `AC-N (SURFACE)`. It emits a markdown table and exits non-zero if any row is not `OK`.
 
-3. **Save the audit output** to `<artifact-root>/work/<slug>/audit.md` using `${CLAUDE_PLUGIN_ROOT}/templates/audit.md`. Fill the metadata (slug, run timestamp, PASS/BLOCKED) and paste the table from step 2.
+2. **Save the audit output** to `<artifact-root>/work/<slug>/audit.md` using `${CLAUDE_PLUGIN_ROOT}/templates/audit.md`. Fill the metadata (slug, run timestamp, PASS/BLOCKED) and paste the table from step 1.
 
-4. **If the script exited 0 (all OK):** set `Result: PASS`; tell the user "Audit PASSED. Safe to open PR."; suggest committing anything pending and running the full gate before `gh pr create`. Mark `audit.md ✅` in the JOURNAL pipeline tracker.
+3. **If the script exited 0 (all OK):** set `Result: PASS`; tell the user "Audit PASSED. Safe to open PR."; mark `audit.md ✅` in the JOURNAL pipeline tracker; continue at **On PASS** below.
 
-   Then, **if the conventions block has `closeout-evaluator: on`**, dispatch the plugin's
-   `lcd-evaluator` agent (read-only, fresh context) with the slug, the artifact root, the ACs,
-   and the baseline..HEAD diff range — **before** the closeout line and the reconcile fold, so
-   a challenged verdict lands before the closeout is logged and before the ACs are folded into
-   `SPEC.md`. Record its result in the JOURNAL LOG — `evaluator: stands` or
-   `evaluator: challenged (<n> findings)` plus the findings verbatim — and present the findings
-   to the user **before** suggesting `gh pr create`. The verdict is advisory (it doesn't reopen
-   the audit result), but on `challenged` the sane order is fix, re-audit, and only then close
-   out. Skip when the key is `off` or absent.
-
-   Then **append the work-item's closeout line** to `<artifact-root>/triage-log.md` (contract in the `lcd:triage` skill, "Closeout" section):
-
-   ```
-   <date> · <slug> · closeout · <Lane> · audit: PASS (first run | run N) · re-routes: <n> · red-green iters: <n> · interventions: <n>
-   ```
-
-   Pull lane / re-routes / iterations / interventions from the JOURNAL (NOW.Lane, LOG entries, the red-green loop's iteration note); `run N` = how many audit runs this slug needed to reach PASS.
-
-   Then, **if `.claude/rules/lcd-conventions.md` has `living-spec: on`**, invoke
-   `lcd:reconcile <slug>` to fold this work-item's ACs into `<artifact-root>/SPEC.md` (the
-   living current-state index). It's a no-op when the flag is off, so this step is safe to run
-   unconditionally — but only the PASS branch reaches it.
-
-5. **If the script exited non-zero (any MISSING / BLOCKED):** set `Result: BLOCKED`; print the table with a clear "PR creation blocked" message; for each non-OK row explain the fix:
+4. **If the script exited non-zero (any MISSING / BLOCKED):** set `Result: BLOCKED`; print the table with a clear "PR creation blocked" message; for each non-OK row explain the fix:
    - `MISSING-HANDLER` → plan-declared path doesn't resolve. Wire the handler, or fix the plan's path cell. For `EVAL`, curate the golden-dataset file at the declared path.
    - `MISSING-TEST` → handler resolves but no test carries `AC-N (SURFACE)`. Re-run `/lcd:test-gen` or rename an existing test to match exactly.
    - `MISSING` → both absent; the surface was never implemented.
    - `BLOCKED` → plan.md lacks a matrix row for this (AC, surface); update the plan first.
-   - Don't auto-fix — phase 6 is read-only; the fix path is back to phase 4 (tests) or phase 5 (implementation).
+   - Don't auto-fix — the audit is read-only; the fix path is back to phase 4 (tests) or phase 5 (implementation).
+
+## On PASS (both lanes)
+
+Read `${CLAUDE_PLUGIN_ROOT}/skills/triage/references/closeout.md` and follow it in order:
+
+1. **`lcd-evaluator` dispatch** when the conventions block has `closeout-evaluator: on` — before the closeout line, findings to the JOURNAL LOG and the user before any PR suggestion.
+2. **The closeout line** via `lcd-triage-log.sh closeout` — audit result is `PASS (first run)`, `PASS (run N)`, or `PASS (test-presence)`; pull lane / re-routes / iterations / interventions from the JOURNAL.
+3. **`lcd:reconcile <slug>`** when `living-spec: on` (a no-op when off).
+
+Then suggest committing anything pending and running the full gate before `gh pr create`.
 
 ## What NOT to do
 
-- Don't edit source or tests — this phase is verification only.
+- Don't edit source or tests — the audit is verification only.
 - Don't suggest `gh pr create` while any row is not OK.
 - Don't modify the spec to make a failing row pass — that silences the symptom. Update the plan or implementation.
 
 ## Quality gate before declaring done
 
-- `audit.md` exists under `<artifact-root>/work/<slug>/`.
-- `Result:` accurately reflects PASS or BLOCKED.
-- If BLOCKED: the user knows which rows need attention and the fix paths.
-- If PASS: the user knows the next step is run-gate then `gh pr create`.
+- Deep: `audit.md` exists under `<artifact-root>/work/<slug>/` with `Result:` accurately PASS or BLOCKED. Standard: the JOURNAL LOG carries the test-presence result.
+- If BLOCKED: the user knows which rows/ACs need attention and the fix paths, and no closeout line was written.
+- If PASS: the closeout contract ran, and the user knows the next step is run-gate then `gh pr create`.
 
 ## Common false-positive sources (and the fix)
 
