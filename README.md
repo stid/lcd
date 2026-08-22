@@ -39,8 +39,9 @@ A single front door (`/lcd:triage`) scores the work on six signals and routes it
 
 Signals: files touched · architecture impact · surfaces · reversibility · cold-pickup plausibility ·
 silently-wrong risk. Ties round **down** — when in doubt, the lighter lane. Routing for 4+ is
-risk-gated: without a risk signal (irreversibility or multi-session cold-pickup), pure signal
-accumulation **caps at Standard** — file count alone never buys the heavy pipeline.
+risk-gated: without the risk signal (multi-session cold-pickup — Deep-level irreversibility is
+already a hard trigger), pure signal accumulation **caps at Standard** — file count alone never
+buys the heavy pipeline.
 
 ## Durable spine
 

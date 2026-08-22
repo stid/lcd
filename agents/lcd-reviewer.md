@@ -24,4 +24,5 @@ Return EXACTLY:
 - `consistent` — true/false
 - `findings` — bullet list; empty when consistent. Each finding: one line, naming the file(s)
   and the surfaces involved, concrete enough that the orchestrator can act without re-reading
-  your reasoning.
+  your reasoning. Example:
+  `src/cli/stats.ts + src/http/stats.ts (CLI, HTTP): CLI rejects an empty dataset with exit 2, HTTP returns 200 with zeros — same input, different result`

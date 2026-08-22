@@ -24,8 +24,8 @@ now"). It doesn't. The binding constraints were never only about fit:
 
 - **Cost** — you pay per token, every turn. A bloated window is a bloated bill.
 - **Latency** — big prompts are slower to process, every turn.
-- **Prompt-cache TTL (~5 min)** — long, churning context misses the cache, so you re-pay
-  for tokens you already sent.
+- **Prompt-cache misses** — long, churning context falls out of the cache, so you re-pay
+  for tokens you already sent. (Cache TTLs vary by plan and load; the discipline doesn't.)
 - **Attention** — recall degrades across very long context; the model attends worse to a
   needle in a 900k-token haystack than to a tight, relevant prompt.
 - **Cross-session resumability** — the one a bigger window *can't* touch. No window

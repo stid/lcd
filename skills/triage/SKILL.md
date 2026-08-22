@@ -47,8 +47,9 @@ Two terms decide the heavy lane:
 
 - A **hard trigger** is any Deep-column hit on **architecture / parallel-surfaces / EVAL /
   irreversibility** (schema/migration/public API).
-- A **risk signal** is **irreversibility** (as above) **OR multi-session cold-pickup** — the signals
-  whose downstream cost actually warrants the full pipeline.
+- A **risk signal** is **multi-session cold-pickup** — the one soft signal whose downstream cost
+  warrants the full pipeline on its own. (Deep-level irreversibility is already a hard trigger, so
+  it can never reach the count-based branch below.)
 
 Then:
 
@@ -79,13 +80,12 @@ Do not over-explain. One line, then act.
 ## Step 4 — log the routing decision (telemetry)
 
 One append per triage — this is how LCD measures itself instead of just asserting "most work is
-Quick". After stating the verdict, append a single line to `<artifact-root>/triage-log.md` (create
-it with a header if missing):
+Quick". After stating the verdict, append the line via the plugin's writer script (ships in
+`bin/`, on PATH; it validates the shape and creates the log with its header if missing):
 
 ```bash
-LOG="<artifact-root>/triage-log.md"
-[ -f "$LOG" ] || printf '# LCD triage log\n\n<!-- date · work · n signals · lane · hard · risk -->\n\n' > "$LOG"
-printf '%s · %s · %d signals · %s · hard:%s · risk:%s\n' "$(date +%F)" "<slug-or-3–5-word-desc>" <n> "<Lane>" "<yes|no>" "<yes|no>" >> "$LOG"
+lcd-triage-log.sh triage --root <artifact-root> --desc "<slug-or-3–5-word-desc>" \
+  --signals <n> --lane <Lane> --hard <yes|no> --risk <yes|no>
 ```
 
 This single shared line is the **only** durable trace **Quick** lane leaves — it is *not* a
@@ -97,50 +97,21 @@ artifact-root), skip the log — there's nowhere to put it.
 
 The triage line records which lane an item *got*; the **closeout** records whether the lane was
 *right*. When a Standard/Deep work-item reaches its finish line (audit PASS, or the JOURNAL NOW
-flips to done for surface-less work), append ONE more line to the same `triage-log.md`:
-
-```
-<date> · <slug> · closeout · <Lane> · audit: <PASS (first run) | PASS (run N) | n/a> · re-routes: <n> · red-green iters: <n> · interventions: <n>
-```
-
-- **audit** — result of the audit gate; `(first run)` vs `(run N)` records whether it passed
-  first try. `n/a` when no surface was declared.
-- **re-routes** — lane changes mid-flight (each also has its own fresh triage line).
-- **red-green iters** — iterations the build loop used (it records this in the JOURNAL LOG).
-- **interventions** — human/orchestrator corrections mid-run (boundary-hook denials, redirects,
-  malformed-artifact rework).
-
-**Quick lane gets no closeout** — there is no work-item to close; its triage line is its whole
-trace (a Quick item that *escalated* leaves the escalation triage line, which is the signal).
-The audit command appends the closeout on PASS; for surface-less Standard work, append it in the
-same edit that marks the JOURNAL done. `/lcd:tidy` reads both line shapes and flags
-miscalibrations — this is what turns the lane thresholds from designed constants into data-tuned
-ones.
-
-**Independent evaluation at closeout (when `closeout-evaluator: on`).** After the audit gate
-passes and before the closeout line, dispatch the plugin's `lcd-evaluator` agent (read-only,
-fresh context) with the slug, ACs, and baseline..HEAD diff. It attempts to refute the green
-suite — degenerate passes, untested AC behaviour, suite-blind changes — and returns `file:line`
-findings. Record the verdict in the JOURNAL LOG; findings are advisory but surface them before
-any PR. Off by default: the same session that wrote the code judging it done is the failure mode
-this key exists to remove.
-
-**Compaction at closeout (when `living-spec: on`).** Right after the closeout line, invoke
-`lcd:reconcile <slug>` to fold this work-item's ACs into `<artifact-root>/SPEC.md` — so the
-living current-state index stays current and the next triage reads it instead of replaying the
-work-item chain. The Deep `/lcd:audit` does this on PASS; for surface-less Standard work, run
-it in the same edit that marks the JOURNAL done. When `living-spec` is off, skip it (reconcile is
-a no-op anyway). **Enable nudge:** if `living-spec` is off but `triage-log.md` already shows ≥5
-closed Standard/Deep items, mention once that the project may have outgrown the work-item chain and
-could enable `living-spec` — a suggestion, not an action.
+flips to done for surface-less work), read
+`${CLAUDE_PLUGIN_ROOT}/skills/triage/references/closeout.md` at that moment and follow it — it
+carries the closeout log line, the opt-in independent evaluator, and the living-spec fold, in
+order. It lives outside this skill so the common triage-time path never pays for it. **Quick lane
+gets no closeout** — there is no work-item to close; its triage line is its whole trace (a Quick
+item that *escalated* leaves the escalation triage line, which is the signal).
 
 ---
 
 ## Lane: Quick
 
 No artifacts. No subagents. Implement directly, honoring the global TDD rules (test first where a
-test makes sense). If a genuine decision gets made along the way, append one line to
-`<artifact-root>/DECISIONS.md`. That's it — do not create a work-item folder.
+test makes sense). If a genuine decision gets made along the way, record it as a `D-NNN` block in
+`<artifact-root>/DECISIONS.md` (the template's format — a one-line free-form append breaks the
+`D-NNN` referencing SPEC provenance depends on). That's it — do not create a work-item folder.
 
 **Staleness marker (only when `living-spec: on`):** if the change alters behaviour already indexed
 in `SPEC.md`, append `· stale: <date>` to that row's Provenance cell — a one-cell marker, **not** a

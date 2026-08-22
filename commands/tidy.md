@@ -1,6 +1,5 @@
 ---
 description: LCD — run periodically, or when finished/abandoned work-items accumulate; prunes stale work-items and runs the maintenance bundle
-argument-hint: "(no args)"
 ---
 
 You are running **LCD tidy** — the recurring maintenance pass that keeps a project's context lean. Stale files waste tokens and confuse future sessions; this command removes them and runs the curated maintenance bundle. **Nothing is deleted without showing the plan and getting confirmation.**

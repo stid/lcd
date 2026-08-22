@@ -14,7 +14,9 @@ Method, in order:
    never research a version the project isn't on.
 2. **Context7 for library docs** (if its tools are available): `resolve-library-id`, then
    `query-docs` for the specific API/config/migration question. Prefer this over web search
-   for library specifics.
+   for library specifics. (The tool allowlist assumes the MCP server is registered as
+   `context7`; a host that registers it under another name puts its tools outside your
+   allowlist — then skip this step and lean on step 3.)
 3. **Targeted web search** — only for recent changes, deprecations, or "current recommended
    approach as of <year>" that docs don't settle. Specific queries; no open-ended browsing.
 

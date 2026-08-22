@@ -6,6 +6,44 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.16.0] — 2026-08-22
+
+From a full review of the plugin's prompts against Anthropic's current published guidance
+(skill authoring, subagents, hooks, instruction framing).
+
+### Added
+- **`bin/lcd-triage-log.sh`** — the triage log's write side is now a script, like its read side
+  always was. Both line shapes (triage + closeout) were model-formatted while `/lcd:tidy`
+  machine-reads them; the script validates every field (lane/hard/risk enums, the audit-result
+  vocabulary) and creates the log with its header when missing. Fixture test included.
+- **`skills/triage/references/closeout.md`** — the closeout contract (log line, opt-in
+  evaluator, living-spec fold) as a single on-demand reference, loaded at the finish line.
+- Sample finding lines in the `lcd-evaluator` and `lcd-reviewer` digest contracts — an example
+  anchors the output format better than a field description alone.
+
+### Changed
+- **The triage SKILL no longer carries the closeout inline.** ~40 lines that fire at a
+  different lifecycle point (and were restated verbatim in `/lcd:audit`) moved to the closeout
+  reference; triage drops under the ~200-line instruction-file adherence budget and both
+  call-sites point at one contract.
+- **`/lcd:audit` gives the Standard lane its own path.** The test-presence audit no longer
+  threads a Deep-numbered list via exceptions, and its previously unspecified failure branch is
+  now explicit: BLOCKED names each uncovered `AC-N (SURFACE)` and writes no closeout line.
+  `PASS (test-presence)` joins the documented audit-result vocabulary.
+- `doctor`/`tidy` drop the literal `argument-hint: "(no args)"` placeholder.
+
+### Fixed
+- **Dead logic in the triage risk-signal definition.** "Irreversibility OR multi-session
+  cold-pickup" — but Deep-level irreversibility is already a hard trigger, so it could never
+  reach the 4+-signals branch where the risk signal is consulted. The rule now names the one
+  operative risk signal (multi-session cold-pickup) in all three places it is stated.
+- Cross-file drift: the plan template's Constitution table gains the `commits.md` row the
+  command already required; the STUCK header names all three halt reasons; the Quick lane
+  records decisions as `D-NNN` blocks (not free-form lines); the `none`/`EVAL` combination
+  rule is stated flatly; the hardcoded "~5 min" prompt-cache TTL is dropped (TTLs vary by plan
+  and load — the cache-miss argument stands without the dated number); `lcd-recon` notes that
+  its Context7 allowlist assumes the server is registered as `context7`.
+
 ## [0.15.1] — 2026-08-12
 
 ### Fixed

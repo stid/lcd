@@ -8,7 +8,7 @@
 
 **Context is the first-class scarce resource — and a large window doesn't change that.** Even with a
 1M-token window the binding constraints are *cost* (you pay per token, every turn), *latency* (big
-prompts are slower), *prompt-cache TTL* (~5 min — long, churning context misses cache), *attention*
+prompts are slower), *prompt-cache misses* (churning context falls out of cache; TTLs vary by plan and load), *attention*
 (recall degrades across very long context), and — the one a bigger window can't touch — *cross-session
 resumability* (no window survives `/clear` or a new session; durable artifacts do). So lanes are
 justified by cost and resumability discipline, not by "it won't fit." Process weight adapts to the
@@ -31,13 +31,13 @@ Score six signals; route by the count, rounding ties **down**:
 | Cold-pickup | one sitting | may span a session | multi-session |
 | Silently-wrong risk | none | low | scorer/ranker/LLM-output → EVAL |
 
-0–1 → **Quick** · 2–3 → **Standard** · **any hard trigger** (Deep-column hit on architecture / parallel surfaces / EVAL / irreversibility) → **Deep**. Otherwise **4+ → Standard, UNLESS a *risk signal* — irreversibility OR multi-session cold-pickup — is among them → Deep**: pure soft-signal accumulation caps at Standard. The user overrides in one word. File count is **not** a hard Deep trigger — post-1M it's a soft cost proxy, not a fit proxy; resumability and the hard triggers carry the routing.
+0–1 → **Quick** · 2–3 → **Standard** · **any hard trigger** (Deep-column hit on architecture / parallel surfaces / EVAL / irreversibility) → **Deep**. Otherwise **4+ → Standard, UNLESS the *risk signal* — multi-session cold-pickup — is among them → Deep** (Deep-level irreversibility is already a hard trigger, so it never reaches this branch): pure soft-signal accumulation caps at Standard. The user overrides in one word. File count is **not** a hard Deep trigger — post-1M it's a soft cost proxy, not a fit proxy; resumability and the hard triggers carry the routing.
 
 - **Quick** — no artifacts, zero subagents, go direct (TDD still applies). The escape hatch that keeps LCD light.
 - **Standard** — one `JOURNAL.md` per work-item: granular resumable STEPS + inline ACs (only if a surface needs the audit) + TDD + verify. No spec/plan/tasks split.
 - **Deep** — the full pipeline (`spec → plan → tasks → test-gen → red-green → audit`) under `<root>/work/<slug>/`, with a `JOURNAL.md` above it as resume anchor + phase tracker.
 
-**Telemetry.** Every triage appends one line to `<root>/triage-log.md` (`date · work · n signals · lane · hard · risk`) — the durable trace that lets LCD check its own claims (is most work really Quick? is Deep earned?). It's a single shared line, not a per-work-item artifact, so Quick lane stays artifact-free. Standard/Deep work-items append a **closeout** line at their finish line (`date · work · closeout · lane · audit · re-routes · red-green iters · interventions`; contract in the `triage` SKILL) — routing records which lane an item *got*, closeout records whether the lane was *right*. `/lcd:tidy` summarizes the distribution and reads the two shapes against each other to flag miscalibrations (escalated items = under-routing; Deep closeouts that sailed through = over-routing), turning lane thresholds from designed constants into data-tuned ones.
+**Telemetry.** Every triage appends one line to `<root>/triage-log.md` (`date · work · n signals · lane · hard · risk`) — the durable trace that lets LCD check its own claims (is most work really Quick? is Deep earned?). It's a single shared line, not a per-work-item artifact, so Quick lane stays artifact-free. Standard/Deep work-items append a **closeout** line at their finish line (`date · work · closeout · lane · audit · re-routes · red-green iters · interventions`; contract in the triage skill's `references/closeout.md`; both line shapes are written via `lcd-triage-log.sh`, which validates them) — routing records which lane an item *got*, closeout records whether the lane was *right*. `/lcd:tidy` summarizes the distribution and reads the two shapes against each other to flag miscalibrations (escalated items = under-routing; Deep closeouts that sailed through = over-routing), turning lane thresholds from designed constants into data-tuned ones.
 
 **Re-routing.** Triage isn't one-shot. If a lane proves wrong mid-flight, **escalate** (Quick→Standard→Deep, carrying the work forward) or **de-escalate** to the lighter lane, and record the reason as a `D-NNN`. `refine` fixes steps *within* a lane; re-routing fixes the lane itself.
 
