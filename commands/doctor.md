@@ -1,6 +1,5 @@
 ---
 description: LCD — run after onboarding, after hand-editing lcd-conventions.md, or when the suite misbehaves; validates the project's LCD setup (machine block, artifacts, pointers)
-argument-hint: "(no args)"
 ---
 
 You are running **LCD doctor** — the health check for a project's LCD setup. It turns the

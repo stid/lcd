@@ -34,4 +34,5 @@ Return EXACTLY:
 
 - `verdict` — `stands` (could not refute) or `challenged`
 - `findings` — bullet list; empty when `stands`. Each finding: one line — `file:line`, the AC or
-  invariant it touches, and the observable failure.
+  invariant it touches, and the observable failure. Example:
+  `src/http/stats.ts:41 — AC-2 (HTTP): error path returns 200 with {} instead of 422; the test only asserts res.ok`

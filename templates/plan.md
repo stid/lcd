@@ -29,6 +29,7 @@
 | `no-overengineering.md` (minimal scope) | yes (always) | <minimal scope: …> |
 | `refinement-protocol.md` (ambiguous edits) | yes (always) | <ambiguity resolved before code edits> |
 | `versioning.md` (bump in first commit) | yes (always) | <minor/patch bump in first commit of this branch> |
+| `commits.md` (atomic, conventional; per-flip in red-green) | yes (always) | <one commit per red→green flip> |
 | `ac-convention.md` — EVAL coverage (quality / LLM-output paths) | yes/no | <≥1 EVAL AC in the spec, or why an eval isn't warranted> |
 | `MAP.md` invariant: <name> | yes/no | <how this plan respects it> |
 | `<.claude/rules/project-rule.md>` | yes/no | <how this plan respects it> |

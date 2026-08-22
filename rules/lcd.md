@@ -8,7 +8,7 @@
 
 **Context is the first-class scarce resource — and a large window doesn't change that.** Even with a
 1M-token window the binding constraints are *cost* (you pay per token, every turn), *latency* (big
-prompts are slower), *prompt-cache TTL* (~5 min — long, churning context misses cache), *attention*
+prompts are slower), *prompt-cache misses* (churning context falls out of cache; TTLs vary by plan and load), *attention*
 (recall degrades across very long context), and — the one a bigger window can't touch — *cross-session
 resumability* (no window survives `/clear` or a new session; durable artifacts do). So lanes are
 justified by cost and resumability discipline, not by "it won't fit." Process weight adapts to the

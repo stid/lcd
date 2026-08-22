@@ -109,8 +109,9 @@ item that *escalated* leaves the escalation triage line, which is the signal).
 ## Lane: Quick
 
 No artifacts. No subagents. Implement directly, honoring the global TDD rules (test first where a
-test makes sense). If a genuine decision gets made along the way, append one line to
-`<artifact-root>/DECISIONS.md`. That's it — do not create a work-item folder.
+test makes sense). If a genuine decision gets made along the way, record it as a `D-NNN` block in
+`<artifact-root>/DECISIONS.md` (the template's format — a one-line free-form append breaks the
+`D-NNN` referencing SPEC provenance depends on). That's it — do not create a work-item folder.
 
 **Staleness marker (only when `living-spec: on`):** if the change alters behaviour already indexed
 in `SPEC.md`, append `· stale: <date>` to that row's Provenance cell — a one-cell marker, **not** a
