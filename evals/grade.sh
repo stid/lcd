@@ -13,12 +13,19 @@
 # verdict, not the grader's exit code); 2 on unusable input (fail closed: this is an
 # instrument, unlike the plugin's fail-open hooks).
 #
-# Usage: grade.sh <workspace-dir> <slug> [arm]
+# Usage: grade.sh [--baseline] <workspace-dir> <slug> [arm]
+#   --baseline: grade a bare-agent workspace (D-025 in the dev harness). Fail-closed in
+#   BOTH directions: --baseline refuses a workspace that still contains docs/lcd (residue
+#   = silently-wrong baseline), and its absence keeps refusing non-LCD workspaces.
+#   The audit column short-circuits to n/a; every other column grades identically.
 
 set -uo pipefail
 
+baseline=0
+if [[ "${1:-}" == "--baseline" ]]; then baseline=1; shift; fi
+
 if [[ $# -lt 2 ]]; then
-  echo "usage: $0 <workspace-dir> <slug> [arm]" >&2
+  echo "usage: $0 [--baseline] <workspace-dir> <slug> [arm]" >&2
   exit 2
 fi
 
@@ -27,13 +34,20 @@ script_dir="$(cd "$(dirname "$0")" && pwd)"
 plugin_bin="$script_dir/../bin"
 
 [[ -d "$ws" ]] || { echo "error: workspace not found: $ws" >&2; exit 2; }
-[[ -d "$ws/docs/lcd" ]] || { echo "error: $ws is not an LCD workspace" >&2; exit 2; }
+if [[ $baseline -eq 1 ]]; then
+  [[ -d "$ws/docs/lcd" ]] && { echo "error: --baseline but workspace contains docs/lcd (methodology residue): $ws" >&2; exit 2; }
+else
+  [[ -d "$ws/docs/lcd" ]] || { echo "error: $ws is not an LCD workspace" >&2; exit 2; }
+fi
 work="$ws/docs/lcd/work/$slug"
 
 # --- audit (the same cross-path gate the methodology ships) ------------------------
 # A run that stopped before producing spec+plan is a valid (failed) result, not a
-# grader error: record it as INCOMPLETE so the experiment row still lands.
-if [[ -f "$work/spec.md" && -f "$work/plan.md" ]]; then
+# grader error: record it as INCOMPLETE so the experiment row still lands. A baseline
+# workspace has no audit by definition: n/a, not a failure.
+if [[ $baseline -eq 1 ]]; then
+  audit_res="n/a"; nonok="n/a"
+elif [[ -f "$work/spec.md" && -f "$work/plan.md" ]]; then
   table="$(LCD_ROOT="$ws" LCD_SPECS_DIR="docs/lcd/work" bash "$plugin_bin/audit-crosspath.sh" "$slug" 2>/dev/null)"
   if [[ $? -eq 0 ]]; then audit_res="PASS"; else audit_res="BLOCKED"; fi
   nonok="$(printf '%s\n' "$table" \
