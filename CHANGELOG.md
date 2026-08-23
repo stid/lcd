@@ -6,6 +6,30 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.17.0] — 2026-08-22
+
+The benchmark gains its missing comparison: a bare-agent baseline arm, so "context economy
+pays" is a measured claim, not an argument (dev-harness decision D-025).
+
+### Added
+- **`evals/run-eval.sh --baseline`** — bare-agent arm: no plugin loads, the workspace copy is
+  stripped of the fixture's methodology onboarding (strip verified fail-closed), the run is
+  driven by a new frozen prompt (`evals/feature-prompt-baseline.md`) whose feature paragraph
+  is byte-identical to the LCD prompt's (test-enforced), and the finish line is an `EVAL-DONE`
+  marker. `--baseline` + `--plugin-dir` is refused as a contradiction.
+- **`evals/grade.sh --baseline`** — grades bare workspaces with the identical row shape
+  (`audit: n/a`); fail-closed both ways (residue under `--baseline` refused; bare workspace
+  without it still refused). Golden-locked grading criteria unchanged.
+- **`tests/test-eval-baseline.sh`** — fixture tests for all of the above.
+
+### Changed
+- **Both eval arms now run config-isolated, symmetrically:** `CLAUDE_CONFIG_DIR` points at a
+  fresh empty dir and `--settings '{"enabledPlugins":[]}'` is passed, so user-level installed
+  plugins and the personal `~/.claude/CLAUDE.md` no longer leak into benchmark runs (they did
+  by default; `--plugin-dir` adds to, not replaces, the installed set). The arms differ by
+  exactly one flag: `--plugin-dir`. Rows recorded before this isolation are not comparable
+  with rows after it.
+
 ## [0.16.0] — 2026-08-22
 
 From a full review of the plugin's prompts against Anthropic's current published guidance
