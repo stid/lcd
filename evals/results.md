@@ -38,3 +38,50 @@ C2 ran the async worktree fan-out path (surface branches + reviewer) — legitim
 variance; its true cost was the highest of the set.
 2026-06-11 · C · 20260611-021641-C · audit: PASS (0 non-OK) · suite: green · commits: 12 (redgreen: 6) · tokens: 5445361 · cost: $10.26 · interventions: n/a
 2026-07-20 · fanout-extract-0.12.0 · 20260720-213945-fanout-extract-0.12.0 · audit: PASS (0 non-OK) · suite: green · commits: 9 (redgreen: 3) · tokens: 4658031 · cost: $8.22 · interventions: n/a · model: claude-fable-5
+2026-08-22 · lcd · 20260822-173937-lcd · audit: PASS (0 non-OK) · suite: green · commits: 9 (redgreen: 3) · tokens: 4161986 · cost: $7.8 · interventions: n/a · model: claude-fable-5
+2026-08-22 · none · 20260822-175007-none · audit: n/a (n/a non-OK) · suite: green · commits: 5 (redgreen: 0) · tokens: 927005 · cost: $2.03 · interventions: n/a · model: claude-fable-5
+2026-08-22 · lcd · 20260822-175434-lcd · audit: PASS (0 non-OK) · suite: green · commits: 9 (redgreen: 3) · tokens: 6055571 · cost: $10.32 · interventions: n/a · model: claude-fable-5
+2026-08-22 · none · 20260822-180922-none · audit: n/a (n/a non-OK) · suite: green · commits: 3 (redgreen: 0) · tokens: 1073425 · cost: $2.27 · interventions: n/a · model: claude-fable-5
+2026-08-22 · lcd · 20260822-181407-lcd · audit: PASS (0 non-OK) · suite: green · commits: 13 (redgreen: 6) · tokens: 4565648 · cost: $8.55 · interventions: n/a · model: claude-fable-5
+2026-08-22 · none · 20260822-182801-none · audit: n/a (n/a non-OK) · suite: green · commits: 1 (redgreen: 0) · tokens: 538784 · cost: $1.64 · interventions: n/a · model: claude-fable-5
+
+## T1 campaign conclusion (2026-08-22) — lcd vs none (bare agent), claude-fable-5
+
+First run of the baseline arm (v0.17.0). 3 runs/arm, alternating, sequential. Isolation:
+settings-only (`--settings '{"enabledPlugins":[]}'` via an `EVAL_CLAUDE_BIN` wrapper) —
+`CLAUDE_CONFIG_DIR` isolation broke auth on the host (Keychain bound to the default config
+identity), so the operator's user-global CLAUDE.md loaded in BOTH arms symmetrically; it
+mandates TDD, which if anything strengthens the baseline arm.
+
+**Cost/tokens (rows above):** lcd mean 4.93M tok / $8.89 (range $7.80–$10.32); none mean
+0.85M tok / $1.98 ($1.64–$2.27). Ranges do not overlap: the bare agent completed the same
+feature at **~4.5× lower cost, ~5.8× fewer tokens, ~2.5× less wall-clock**. All 6 runs
+finished green (lcd: audit PASS 0 non-OK ×3; none: EVAL-DONE + suite green ×3).
+
+**Quality (rubric review of all 6 workspaces — completeness / cross-surface parity /
+shared-logic / test quality / code quality, independent reviewers, file:line evidence):**
+near-parity. lcd 69/75, none 72/75. All 6 runs: complete feature, logic correctly placed
+once in core, style-conformant, suite green. Differences worth recording:
+- All 3 lcd runs *invented* an input-validation contract for `stats` ("stats takes no
+  input", rejected on both surfaces, explicit parity tests) — and all 3 then carried minor
+  parity drift *inside that invented path* (query-string vs argv asymmetry ×3, a 405/message
+  conflation, an empty-string edge). The 3 none runs read `stats` as accepting no input
+  (consistent with the fixture's `list`), making parity vacuous and defect-free. The spec
+  phase manufactured requirement surface area, then imperfectly satisfied it.
+- lcd test suites asserted cross-surface parity explicitly (2 of 3 directly); none suites
+  asserted surface-to-core equivalence (transitive parity) — slightly weaker as evidence,
+  same observed outcomes here.
+- Implementation variance was HIGHER under lcd: checksum sha256+ISO in 2 runs but FNV-1a +
+  mutation-counter in 1; all 3 none runs converged on the same natural design (sha256 over
+  JSON.stringify, ISO timestamp). n=3 — a signal to watch, not a finding.
+
+**What this campaign does NOT show:** single-shot only — LCD's core claims (cheap cold
+pickup, multi-session drift control, decision durability) are structurally unmeasurable in
+this design and remain untested (→ T1b longitudinal benchmark, dev harness
+PROPOSALS-2026-08). Interventions unmeasured (n/a; → T2). One fixture, one task class (small,
+well-specified, two-surface), one model. The lcd arm's spend also produced durable process
+artifacts (spec/plan/journal/audit) whose downstream value is exactly what T1b would price.
+
+**Honest single-shot verdict:** on this task class, the full Deep pipeline cost ~4.5× and
+bought no measurable single-shot quality advantage. Whatever case exists for LCD rests on
+multi-session value — currently unmeasured — not on single-shot output quality.
