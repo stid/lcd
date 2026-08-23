@@ -14,9 +14,19 @@
 # CONTRIBUTING for the evidence-in-PR policy (contributors run locally with their own key).
 #
 # Usage:
-#   evals/run-eval.sh --arm <label> [--plugin-dir <plugin-root>] [--fixture evals/fixture]
-#                     [--results evals/results.md] [--workspace <dir>]
-#                     [--slug stats-surfaces] [--dry-run]
+#   evals/run-eval.sh --arm <label> [--baseline] [--plugin-dir <plugin-root>]
+#                     [--fixture evals/fixture] [--results evals/results.md]
+#                     [--workspace <dir>] [--slug stats-surfaces] [--dry-run]
+#
+# --baseline: bare-agent arm (D-025 in the dev harness). No plugin loads; the workspace
+# copy is stripped of the fixture's methodology onboarding (.claude/, docs/) and the strip
+# is verified fail-closed; the frozen baseline prompt drives the run and the finish line
+# is an EVAL-DONE marker instead of the audit artifact. Contradicts --plugin-dir.
+#
+# Isolation (BOTH arms, symmetric): every model call runs with CLAUDE_CONFIG_DIR pointed
+# at a fresh empty dir (bypasses user-level plugins, settings and CLAUDE.md; auth survives
+# via the OS keychain) and --settings '{"enabledPlugins":[]}'. The arms differ by exactly
+# one flag: the plugin arm adds --plugin-dir.
 # Env:
 #   EVAL_CLAUDE_BIN    model CLI (default: claude)
 #   EVAL_CLAUDE_MODEL  model for the run (default: claude-fable-5 — the experiment's premise
@@ -33,18 +43,21 @@ plugin_root="$(cd "$(dirname "$0")/.." && pwd)"
 
 arm=""
 plugin_dir="$plugin_root"
+plugin_dir_explicit=0
+baseline=0
 fixture="$plugin_root/evals/fixture"
 results="$plugin_root/evals/results.md"
 workspace=""
 slug="stats-surfaces"
 dry_run=0
 
-usage() { echo "usage: $0 --arm <label> [--plugin-dir DIR] [--fixture DIR] [--results FILE] [--workspace DIR] [--slug SLUG] [--dry-run]" >&2; }
+usage() { echo "usage: $0 --arm <label> [--baseline] [--plugin-dir DIR] [--fixture DIR] [--results FILE] [--workspace DIR] [--slug SLUG] [--dry-run]" >&2; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --arm)        arm="${2:-}"; shift 2 ;;
-    --plugin-dir) plugin_dir="${2:-}"; shift 2 ;;
+    --baseline)   baseline=1; shift ;;
+    --plugin-dir) plugin_dir="${2:-}"; plugin_dir_explicit=1; shift 2 ;;
     --fixture)    fixture="${2:-}"; shift 2 ;;
     --results)    results="${2:-}"; shift 2 ;;
     --workspace)  workspace="${2:-}"; shift 2 ;;
@@ -60,18 +73,26 @@ claude_bin="${EVAL_CLAUDE_BIN:-claude}"
 claude_model="${EVAL_CLAUDE_MODEL:-claude-fable-5}"
 claude_flags="${EVAL_CLAUDE_FLAGS:---output-format json --dangerously-skip-permissions}"
 max_legs="${EVAL_MAX_LEGS:-8}"
-prompt_file="$plugin_root/evals/feature-prompt.md"
+if [[ $baseline -eq 1 ]]; then
+  prompt_file="$plugin_root/evals/feature-prompt-baseline.md"
+else
+  prompt_file="$plugin_root/evals/feature-prompt.md"
+fi
 [[ -n "$workspace" ]] || workspace="$(mktemp -d "${TMPDIR:-/tmp}/lcd-eval-XXXXXX")/$arm"
+config_dir="$(dirname "$workspace")/claude-config-$arm"
+isolation_flags=(--settings '{"enabledPlugins":[]}')
 
 # --- preflight: fail closed, naming the precondition -------------------------------
 refuse() { echo "refused: $1" >&2; exit 2; }
 
+[[ $baseline -eq 1 && $plugin_dir_explicit -eq 1 ]] \
+  && refuse "--baseline contradicts --plugin-dir (the baseline arm runs with no plugin)"
 [[ -d "$fixture" && -f "$fixture/package.json" ]] \
   || refuse "fixture not found or not a project: $fixture"
 [[ -f "$fixture/.claude/rules/lcd-conventions.md" ]] \
   || refuse "fixture is not LCD-onboarded: $fixture"
-[[ -f "$plugin_dir/.claude-plugin/plugin.json" ]] \
-  || refuse "plugin variant not found: $plugin_dir (no .claude-plugin/plugin.json)"
+[[ $baseline -eq 0 && ! -f "$plugin_dir/.claude-plugin/plugin.json" ]] \
+  && refuse "plugin variant not found: $plugin_dir (no .claude-plugin/plugin.json)"
 [[ -f "$prompt_file" ]] || refuse "feature prompt missing: $prompt_file"
 command -v "$claude_bin" >/dev/null 2>&1 \
   || refuse "model CLI not found: $claude_bin (set EVAL_CLAUDE_BIN)"
@@ -81,11 +102,16 @@ if [[ $dry_run -eq 1 ]]; then
   echo "DRY RUN — resolved plan (no model call, nothing materialized):"
   echo "  arm: $arm"
   echo "  fixture: $fixture"
-  echo "  plugin: $plugin_dir"
+  if [[ $baseline -eq 1 ]]; then
+    echo "  plugin: none (baseline)"
+  else
+    echo "  plugin: $plugin_dir"
+  fi
   echo "  slug: $slug"
   echo "  prompt: $prompt_file"
   echo "  workspace: $workspace"
   echo "  results: $results"
+  echo "  isolation: CLAUDE_CONFIG_DIR=$config_dir · --settings '{\"enabledPlugins\":[]}'"
   echo "  model: $claude_bin --model $claude_model $claude_flags (max $max_legs legs)"
   exit 0
 fi
@@ -93,6 +119,13 @@ fi
 # --- materialize the throwaway workspace -------------------------------------------
 mkdir -p "$(dirname "$workspace")"
 cp -R "$fixture" "$workspace"
+if [[ $baseline -eq 1 ]]; then
+  # Strip the methodology onboarding, then VERIFY the strip (AC-2: a run that cannot
+  # guarantee absence must not start — a "baseline" with residue is silently wrong).
+  rm -rf "$workspace/.claude" "$workspace/docs" 2>/dev/null
+  [[ -e "$workspace/.claude" || -e "$workspace/docs" ]] \
+    && refuse "baseline strip left methodology residue in $workspace"
+fi
 git -C "$workspace" init -q -b main
 git -C "$workspace" add -A
 git -C "$workspace" -c user.email=eval@local -c user.name=eval \
@@ -106,10 +139,20 @@ git -C "$workspace" tag eval-baseline
 # IS_SANDBOX=1: permit --dangerously-skip-permissions under root in containerized
 # environments — acceptable here because the run is confined to the throwaway workspace.
 echo "running arm '$arm' in $workspace …" >&2
-audit_artifact="$workspace/docs/lcd/work/$slug/audit.md"
-nudge="Continue the LCD Deep-lane pipeline for '$slug' from wherever it stands (check docs/lcd/work/$slug/). Do not stop until the audit for $slug has run with all rows OK and the full test suite is green, or you are hard-blocked (record why in the JOURNAL)."
+if [[ $baseline -eq 1 ]]; then
+  finish_artifact="$workspace/EVAL-DONE"
+  finish_label="EVAL-DONE marker"
+  nudge="Continue building the 'stats' feature per the original instructions. Do not stop until the feature is complete with the full test suite green — then create a file named EVAL-DONE at the repository root as your final action. If hard-blocked, record why in BLOCKED.md and stop."
+  plugin_args=()
+else
+  finish_artifact="$workspace/docs/lcd/work/$slug/audit.md"
+  finish_label="audit artifact"
+  nudge="Continue the LCD Deep-lane pipeline for '$slug' from wherever it stands (check docs/lcd/work/$slug/). Do not stop until the audit for $slug has run with all rows OK and the full test suite is green, or you are hard-blocked (record why in the JOURNAL)."
+  plugin_args=(--plugin-dir "$plugin_dir")
+fi
+mkdir -p "$config_dir"
 leg=0
-while [[ ! -f "$audit_artifact" && $leg -lt $max_legs ]]; do
+while [[ ! -f "$finish_artifact" && $leg -lt $max_legs ]]; do
   leg=$((leg + 1))
   if [[ $leg -eq 1 ]]; then
     leg_args=(-p "$(cat "$prompt_file")")
@@ -117,16 +160,19 @@ while [[ ! -f "$audit_artifact" && $leg -lt $max_legs ]]; do
     leg_args=(-p --continue "$nudge")
   fi
   # shellcheck disable=SC2086
-  (cd "$workspace" && IS_SANDBOX=1 "$claude_bin" "${leg_args[@]}" \
-      --model "$claude_model" --plugin-dir "$plugin_dir" $claude_flags \
+  (cd "$workspace" && IS_SANDBOX=1 CLAUDE_CONFIG_DIR="$config_dir" \
+      "$claude_bin" "${leg_args[@]}" \
+      --model "$claude_model" "${plugin_args[@]}" "${isolation_flags[@]}" $claude_flags \
       > "run-$leg.json" 2>> run.stderr)
   run_code=$?
   [[ $run_code -eq 0 ]] || echo "warning: leg $leg exited $run_code (continuing — the row is the verdict)" >&2
 done
-echo "run finished after $leg leg(s); audit artifact $( [[ -f "$audit_artifact" ]] && echo present || echo ABSENT )" >&2
+echo "run finished after $leg leg(s); $finish_label $( [[ -f "$finish_artifact" ]] && echo present || echo ABSENT )" >&2
 
 # --- grade + append -----------------------------------------------------------------
-row="$(bash "$plugin_root/evals/grade.sh" "$workspace" "$slug" "$arm")" \
+grade_args=()
+[[ $baseline -eq 1 ]] && grade_args=(--baseline)
+row="$(bash "$plugin_root/evals/grade.sh" "${grade_args[@]}" "$workspace" "$slug" "$arm")" \
   || refuse "grading failed for $workspace"
 # Stamp the model id on the row (here, not in the golden-locked grader): rows are
 # comparable only within one model id — a silent model change must be visible per row.
