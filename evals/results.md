@@ -71,7 +71,7 @@ anything strengthens the baseline arm).
 
 **Cost/tokens:** lcd mean 4.76M tok / $8.88 (range $7.63–$10.09); none mean 0.91M tok /
 $2.01 ($1.77–$2.17). No overlap: the bare agent completed the same feature at **~4.4× lower
-cost, ~5.2× fewer tokens, ~2.5× less wall-clock**. All 6 runs green (lcd: audit PASS ×3;
+cost, ~5.2× fewer tokens, ~5.1× less wall-clock (lcd ~10.3 min vs none ~2.0 min mean)**. All 6 runs green (lcd: audit PASS ×3;
 none: EVAL-DONE + suite green ×3). Means match the invalidated 2026-08-22 campaign within
 noise — the contamination's cost effect was negligible, but only this rerun can say so.
 
