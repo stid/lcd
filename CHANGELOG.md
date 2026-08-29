@@ -6,6 +6,23 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.17.1] — 2026-08-28
+
+Repair of the 0.17.0 isolation contract, found by the independent closeout evaluator
+refuting the first baseline campaign: the runs it guarded were not isolated.
+
+### Fixed
+- **The plugin-disable flag was schema-invalid and inert.** `--settings '{"enabledPlugins":[]}'`
+  passed an array where the CLI expects an object map with an explicit `false` per plugin —
+  so user-installed plugins (including lcd itself) still loaded into "baseline" runs. The
+  runner now builds the disable map from the operator's real `~/.claude/settings.json`
+  (`{"<plugin>": false}` for every enabled plugin), failing closed when the file exists but
+  cannot be parsed, or when `jq` is missing.
+- **Tests now assert the model call's real argv**, via an argv-recording stub standing in as
+  the model CLI: baseline legs must carry no `--plugin-dir` and the schema-valid disable
+  map; plugin-arm legs must carry `--plugin-dir` plus the same map. The previous tests only
+  checked the runner's printed plan — the exact gap the evaluator named.
+
 ## [0.17.0] — 2026-08-22
 
 The benchmark gains its missing comparison: a bare-agent baseline arm, so "context economy

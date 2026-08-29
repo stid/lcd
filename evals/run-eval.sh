@@ -24,9 +24,10 @@
 # is an EVAL-DONE marker instead of the audit artifact. Contradicts --plugin-dir.
 #
 # Isolation (BOTH arms, symmetric): every model call runs with CLAUDE_CONFIG_DIR pointed
-# at a fresh empty dir (bypasses user-level plugins, settings and CLAUDE.md; auth survives
-# via the OS keychain) and --settings '{"enabledPlugins":[]}'. The arms differ by exactly
-# one flag: the plugin arm adds --plugin-dir.
+# at a fresh empty dir (bypasses user-level plugins, settings and CLAUDE.md where the host
+# supports it) and --settings carrying a plugin-disable map built from the operator's real
+# settings (object map, explicit false per plugin — the schema-valid form; an empty array
+# is inert). The arms differ by exactly one flag: the plugin arm adds --plugin-dir.
 # Env:
 #   EVAL_CLAUDE_BIN    model CLI (default: claude)
 #   EVAL_CLAUDE_MODEL  model for the run (default: claude-fable-5 — the experiment's premise
@@ -80,10 +81,27 @@ else
 fi
 [[ -n "$workspace" ]] || workspace="$(mktemp -d "${TMPDIR:-/tmp}/lcd-eval-XXXXXX")/$arm"
 config_dir="$(dirname "$workspace")/claude-config-$arm"
-isolation_flags=(--settings '{"enabledPlugins":[]}')
 
 # --- preflight: fail closed, naming the precondition -------------------------------
 refuse() { echo "refused: $1" >&2; exit 2; }
+
+# Plugin-disable map (0.17.1, evaluator finding): enabledPlugins takes an OBJECT map with
+# an explicit false per plugin — an empty array is schema-invalid and silently inert, and
+# --plugin-dir ADDS to the installed set rather than replacing it. Build the map from the
+# operator's real settings so every user-enabled plugin is disabled for the run; fail
+# closed if the file exists but can't be parsed (an instrument must not guess).
+user_settings="${HOME}/.claude/settings.json"
+if [[ -f "$user_settings" ]]; then
+  command -v jq >/dev/null 2>&1 \
+    || refuse "jq required to build the plugin-disable map from $user_settings"
+  disable_map="$(jq -c '{enabledPlugins: ((.enabledPlugins // {}) | with_entries(.value = false))}' \
+      "$user_settings" 2>/dev/null)" \
+    || refuse "cannot parse $user_settings to build the plugin-disable map"
+  [[ -n "$disable_map" ]] || refuse "cannot parse $user_settings to build the plugin-disable map"
+else
+  disable_map='{"enabledPlugins":{}}'
+fi
+isolation_flags=(--settings "$disable_map")
 
 [[ $baseline -eq 1 && $plugin_dir_explicit -eq 1 ]] \
   && refuse "--baseline contradicts --plugin-dir (the baseline arm runs with no plugin)"
@@ -111,7 +129,7 @@ if [[ $dry_run -eq 1 ]]; then
   echo "  prompt: $prompt_file"
   echo "  workspace: $workspace"
   echo "  results: $results"
-  echo "  isolation: CLAUDE_CONFIG_DIR=$config_dir · --settings '{\"enabledPlugins\":[]}'"
+  echo "  isolation: CLAUDE_CONFIG_DIR=$config_dir · --settings $disable_map"
   echo "  model: $claude_bin --model $claude_model $claude_flags (max $max_legs legs)"
   exit 0
 fi

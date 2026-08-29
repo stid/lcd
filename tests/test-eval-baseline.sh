@@ -115,4 +115,58 @@ cols_b="$(grep ' · none · ' "$results" | head -1 | awk -F' · ' '{print NF}')"
 [[ -n "$cols_b" ]] || fail "AC-4 (EVAL): baseline row present and labelled with its arm"
 [[ "$cols_a" -eq "$cols_b" ]] || fail "AC-4 (EVAL): rows are column-identical across arms ($cols_a vs $cols_b)"
 
+# --- AC-2 (CLI): the model call's REAL argv is isolated (evaluator finding, 0.17.1) -----
+# An argv-recording stub stands in for the model CLI: these tests assert what the leg loop
+# actually executes, not what the runner prints. Fake HOME provides a user settings.json
+# with enabled plugins; the runner must pass --settings with an OBJECT map disabling each.
+stub="$tmp/claude-stub.sh"
+cat > "$stub" << 'EOS'
+#!/usr/bin/env bash
+printf '%s\n' "$@" > "${ARGV_OUT:?}"
+echo '{}'
+EOS
+chmod +x "$stub"
+fakehome="$tmp/fakehome"
+mkdir -p "$fakehome/.claude"
+echo '{"enabledPlugins":{"lcd@lcd":true,"other@mkt":true}}' > "$fakehome/.claude/settings.json"
+
+extract_settings() {  # print the value following --settings in the recorded argv
+  awk 'found {print; exit} $0=="--settings" {found=1}' "$1"
+}
+
+export ARGV_OUT="$tmp/argv-none.txt"
+out="$(HOME="$fakehome" EVAL_CLAUDE_BIN="$stub" EVAL_MAX_LEGS=1 bash "$runner" --arm none --baseline \
+        --fixture "$fixture" --results "$tmp/r-argv.md" --workspace "$tmp/ws-argv-none" 2>&1)"; code=$?
+assert_exit 0 "$code" "AC-2 (CLI): one-leg baseline run with argv stub completes"
+[[ -f "$ARGV_OUT" ]] || fail "AC-2 (CLI): baseline leg actually invoked the model CLI"
+argv="$(cat "$ARGV_OUT")"
+assert_not_contains "$argv" '--plugin-dir' "AC-2 (CLI): baseline model call carries no --plugin-dir"
+settings_json="$(extract_settings "$ARGV_OUT")"
+[[ -n "$settings_json" ]] || fail "AC-2 (CLI): baseline model call passes --settings"
+echo "$settings_json" | jq -e '.enabledPlugins | type == "object"' >/dev/null \
+  || fail "AC-2 (CLI): enabledPlugins is an object map (schema-valid), got: $settings_json"
+echo "$settings_json" | jq -e '.enabledPlugins["lcd@lcd"] == false and .enabledPlugins["other@mkt"] == false' >/dev/null \
+  || fail "AC-2 (CLI): every user-enabled plugin explicitly disabled, got: $settings_json"
+
+export ARGV_OUT="$tmp/argv-lcd.txt"
+out="$(HOME="$fakehome" EVAL_CLAUDE_BIN="$stub" EVAL_MAX_LEGS=1 bash "$runner" --arm A \
+        --fixture "$fixture" --plugin-dir "$plugin_root" --results "$tmp/r-argv.md" \
+        --workspace "$tmp/ws-argv-lcd" 2>&1)"; code=$?
+assert_exit 0 "$code" "AC-2 (CLI): one-leg plugin-arm run with argv stub completes"
+argv="$(cat "$ARGV_OUT")"
+assert_contains "$argv" '--plugin-dir' "AC-2 (CLI): plugin-arm model call carries --plugin-dir"
+settings_json="$(extract_settings "$ARGV_OUT")"
+echo "$settings_json" | jq -e '.enabledPlugins["lcd@lcd"] == false' >/dev/null \
+  || fail "AC-2 (CLI): plugin arm disables user-level plugins identically, got: $settings_json"
+unset ARGV_OUT
+
+# --- AC-2 (CLI): unparseable user settings fail closed ----------------------------------
+badhome="$tmp/badhome"
+mkdir -p "$badhome/.claude"
+echo 'not json {' > "$badhome/.claude/settings.json"
+out="$(HOME="$badhome" EVAL_CLAUDE_BIN=bash EVAL_MAX_LEGS=0 bash "$runner" --arm none --baseline \
+        --fixture "$fixture" --results "$tmp/r-bad.md" --workspace "$tmp/ws-bad" 2>&1)"; code=$?
+assert_exit 2 "$code" "AC-2 (CLI): unparseable user settings.json refused (no silent inert isolation)"
+assert_contains "$out" 'settings' "AC-2 (CLI): refusal names the settings file"
+
 exit 0
