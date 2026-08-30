@@ -54,6 +54,22 @@ Target slug: `$ARGUMENTS`
 
 8. **Update the JOURNAL:** mark `tests ✅`; set Next action = "run lcd:redgreen-loop". **Hand off** to the `lcd:redgreen-loop` skill (phase 5) or a manual red-green cycle.
 
+## AC examples (the shapes you'll parse)
+
+```
+**AC-1** (surfaces: CLI, HTTP, MCP): Given a config key is set in the environment, when any path resolves that key, then the environment value is used.
+
+**AC-2** (surfaces: HTTP): Given /api/doctor is called, when the env-var source supplies the key, then the response includes a `key_source` field set to "env".
+
+**AC-3** (surfaces: none): The resolver returns the first non-empty source in the precedence chain (env → config file).
+
+**AC-4** (surfaces: EVAL): Given the frozen reference set, when the scorer's calibration error is measured, then the mean absolute error stays at or below the declared threshold.
+
+**AC-5** (surfaces: EVAL): Given the frozen counter-example set, when the assistant answers a wrong-item complaint, then the response does NOT emit a raw policy paragraph and does NOT ask for information already supplied in the message.
+```
+
+`AC-5` is the must-not companion: same EVAL format, body phrased as a forbidden behavior, scored against counter-examples in the golden dataset — its test asserts the forbidden behavior is absent.
+
 ## What NOT to do
 
 - Don't write implementation code — phase 4 is tests-only.
