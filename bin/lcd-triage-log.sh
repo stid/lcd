@@ -12,11 +12,14 @@
 #                              --hard <yes|no> --risk <yes|no>
 #   lcd-triage-log.sh closeout --root <artifact-root> --slug <slug> \
 #                              --lane <Standard|Deep> --audit "<result>" \
-#                              --reroutes <n> --iters <n|n/a[ (note)]> \
-#                              --interventions <n|n (note)>
+#                              --reroutes <n> --interventions <n|n (note)> \
+#                              [--iters <n|n/a[ (note)]>]
 #
 #   --audit accepts: "PASS (first run)" | "PASS (run <N>)" | "PASS (test-presence)"
 #                  | "n/a" | "n/a (<note>)"
+#   --iters is OPTIONAL (lean-loop): omitted → the line carries no "red-green iters"
+#   field. Both shapes are valid — existing logs are never rewritten, and readers
+#   (`/lcd:tidy`) accept lines with and without the iters field.
 #
 # Exit: 0 on append; 2 on usage/validation error (nothing written).
 
@@ -68,9 +71,13 @@ else
   [[ "$audit" =~ ^(PASS\ \((first\ run|run\ [0-9]+|test-presence)\)|n/a( \(.+\))?)$ ]] \
     || usage_die "closeout: --audit must be 'PASS (first run)'|'PASS (run N)'|'PASS (test-presence)'|'n/a'|'n/a (<note>)' (got '$audit')"
   [[ "$reroutes" =~ ^[0-9]+$ ]] || usage_die "closeout: --reroutes must be an integer (got '$reroutes')"
-  [[ "$iters" =~ ^([0-9]+|n/a( \(.+\))?)$ ]] || usage_die "closeout: --iters must be an integer or 'n/a[ (note)]' (got '$iters')"
+  if [[ -n "$iters" ]]; then
+    [[ "$iters" =~ ^([0-9]+|n/a( \(.+\))?)$ ]] || usage_die "closeout: --iters must be an integer or 'n/a[ (note)]' (got '$iters')"
+  fi
   [[ "$interventions" =~ ^[0-9]+( \(.+\))?$ ]] || usage_die "closeout: --interventions must be an integer, optionally with a '(note)' (got '$interventions')"
-  line="$(date +%F) · $slug · closeout · $lane · audit: $audit · re-routes: $reroutes · red-green iters: $iters · interventions: $interventions"
+  line="$(date +%F) · $slug · closeout · $lane · audit: $audit · re-routes: $reroutes"
+  [[ -n "$iters" ]] && line="$line · red-green iters: $iters"
+  line="$line · interventions: $interventions"
 fi
 
 log="$root/triage-log.md"
