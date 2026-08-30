@@ -137,8 +137,9 @@ test_hit() {
     # Scope declared → it is the whole search space; a missing scope file is a miss,
     # never a fallback to the repo-wide grep.
     hit=""
+    # -H: a single-file target must still print its filename (GNU grep omits it otherwise).
     [[ ${#targets[@]} -gt 0 ]] \
-      && hit="$(grep -rnF -- "$lit" "${targets[@]}" 2>/dev/null | head -1 || true)"
+      && hit="$(grep -rnHF -- "$lit" "${targets[@]}" 2>/dev/null | head -1 || true)"
   else
     hit="$(grep -rnF \
         --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=target \
