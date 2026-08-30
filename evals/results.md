@@ -93,3 +93,46 @@ downstream value is exactly what T1b would price.
 **Honest single-shot verdict (unchanged by the rerun):** on this task class the full Deep
 pipeline costs ~4.4× and buys no measurable single-shot quality advantage. LCD's case, if
 it exists, is multi-session — currently unmeasured.
+2026-08-30 · standard-1 · std-run1 · audit: INCOMPLETE (n/a non-OK) · suite: green · commits: 5 (redgreen: 0) · tokens: 2048493 · cost: $4.34 · interventions: n/a · model: claude-fable-5
+2026-08-30 · standard-2 · std-run2 · audit: INCOMPLETE (n/a non-OK) · suite: green · commits: 5 (redgreen: 0) · tokens: 1717075 · cost: $3.8 · interventions: n/a · model: claude-fable-5
+2026-08-30 · standard-3 · std-run3 · audit: INCOMPLETE (n/a non-OK) · suite: green · commits: 5 (redgreen: 0) · tokens: 2211118 · cost: $4.4 · interventions: n/a · model: claude-fable-5
+
+## Standard-arm campaign conclusion (2026-08-30, work-item lean-loop) — triage-routed vs the T1 arms, claude-fable-5
+
+Context: the 2026-08-30 over-engineering audit (harness D-026) found T1's prompt *mandated*
+the Deep pipeline while triage's own table routes the benchmark task to Standard — so the
+4.4× number priced a lane real work rarely enters. This campaign ran the new
+`--triage-routed` arm (`feature-prompt-standard.md`, no lane named) 3×, sequential,
+settings-only isolation (D-025 fallback wrapper — config-dir isolation breaks keychain auth
+on this machine; a first attempt without the wrapper failed all legs "Not logged in" and was
+discarded). Plugin under test: released v0.17.1 (installed cache), i.e. WITHOUT this PR's
+noise cuts.
+
+**Routing:** 3/3 runs triaged the task to **Standard** (3 signals, hard:no, risk:no) —
+confirming the D-026 reframe empirically. All 3 completed the full Standard contract
+unprompted: JOURNAL, TDD, test-presence audit PASS, closeout line (re-routes: 0,
+interventions: 0). `audit: INCOMPLETE` in the rows is the grader's Deep-artifact check —
+by design, not failure; suite green is the completion signal.
+
+**Cost/tokens:** mean 1.99M tok / $4.18 / ~4.7 min (ranges 1.72–2.21M, $3.80–$4.40,
+4.1–5.5 min). Against T1's verified arms: **~2.1× bare cost and ~2.2× tokens (vs Deep's
+~4.4× / ~5.2×)** — the median lane costs roughly half the Deep pipeline's overhead. One leg
+per run (Deep needed multi-leg continues).
+
+**Quality:** two independent reviewers, same 5-dim rubric (one by inspection: 69/75; one by
+mutation testing — 4 injected defects per workspace: 71/75). Per-workspace 24/20–22/25;
+per-workspace mean 23.3–23.7 sits inside T1's band (Deep 23.0, bare 24.0). Near-parity
+again: process weight bought no measurable single-shot quality at ANY tier. Notable: the
+three runs converged on one design (byte-identical `cli.js` across all three; single
+divergence: run1's un-enveloped HTTP body), where the T1 Deep runs diverged. The spread is
+verification depth (run2 wrote 5 new tests vs 11–12; a mutation survives only there).
+
+**What this does NOT show:** same limits as T1 — single-shot, one fixture/task/model;
+cold-pickup and multi-session value unmeasured (→ T1b). Ran on 0.17.1: the lean-loop cuts
+(closeout collapse, triage slim) should reduce Standard's overhead — re-measure on 0.18.0
+is parked in the harness ROADMAP.
+
+**Honest verdict:** the lane the methodology actually picks for this task costs ~2.1× bare
+(not 4.4×) at the same near-parity quality, and 3/3 runs produced the durable spine
+(JOURNAL, closeout telemetry) whose value T1b prices. The keep/slim/pivot decision now has
+the median lane's number.
