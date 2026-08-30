@@ -14,7 +14,7 @@
 # CONTRIBUTING for the evidence-in-PR policy (contributors run locally with their own key).
 #
 # Usage:
-#   evals/run-eval.sh --arm <label> [--baseline] [--plugin-dir <plugin-root>]
+#   evals/run-eval.sh --arm <label> [--baseline | --triage-routed] [--plugin-dir <plugin-root>]
 #                     [--fixture evals/fixture] [--results evals/results.md]
 #                     [--workspace <dir>] [--slug stats-surfaces] [--dry-run]
 #
@@ -22,6 +22,11 @@
 # copy is stripped of the fixture's methodology onboarding (.claude/, docs/) and the strip
 # is verified fail-closed; the frozen baseline prompt drives the run and the finish line
 # is an EVAL-DONE marker instead of the audit artifact. Contradicts --plugin-dir.
+#
+# --triage-routed: plugin arm driven by feature-prompt-standard.md (work-item lean-loop) —
+# the prompt routes through lcd:triage instead of mandating the Deep pipeline, so the run
+# measures the lane triage actually picks. Lane-agnostic finish line: the EVAL-DONE marker
+# (a routed run may land in a lane that never writes audit.md). Contradicts --baseline.
 #
 # Isolation (BOTH arms, symmetric): every model call runs with CLAUDE_CONFIG_DIR pointed
 # at a fresh empty dir (bypasses user-level plugins, settings and CLAUDE.md where the host
@@ -46,18 +51,20 @@ arm=""
 plugin_dir="$plugin_root"
 plugin_dir_explicit=0
 baseline=0
+triage_routed=0
 fixture="$plugin_root/evals/fixture"
 results="$plugin_root/evals/results.md"
 workspace=""
 slug="stats-surfaces"
 dry_run=0
 
-usage() { echo "usage: $0 --arm <label> [--baseline] [--plugin-dir DIR] [--fixture DIR] [--results FILE] [--workspace DIR] [--slug SLUG] [--dry-run]" >&2; }
+usage() { echo "usage: $0 --arm <label> [--baseline | --triage-routed] [--plugin-dir DIR] [--fixture DIR] [--results FILE] [--workspace DIR] [--slug SLUG] [--dry-run]" >&2; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --arm)        arm="${2:-}"; shift 2 ;;
     --baseline)   baseline=1; shift ;;
+    --triage-routed) triage_routed=1; shift ;;
     --plugin-dir) plugin_dir="${2:-}"; plugin_dir_explicit=1; shift 2 ;;
     --fixture)    fixture="${2:-}"; shift 2 ;;
     --results)    results="${2:-}"; shift 2 ;;
@@ -76,6 +83,8 @@ claude_flags="${EVAL_CLAUDE_FLAGS:---output-format json --dangerously-skip-permi
 max_legs="${EVAL_MAX_LEGS:-8}"
 if [[ $baseline -eq 1 ]]; then
   prompt_file="$plugin_root/evals/feature-prompt-baseline.md"
+elif [[ $triage_routed -eq 1 ]]; then
+  prompt_file="$plugin_root/evals/feature-prompt-standard.md"
 else
   prompt_file="$plugin_root/evals/feature-prompt.md"
 fi
@@ -105,6 +114,8 @@ isolation_flags=(--settings "$disable_map")
 
 [[ $baseline -eq 1 && $plugin_dir_explicit -eq 1 ]] \
   && refuse "--baseline contradicts --plugin-dir (the baseline arm runs with no plugin)"
+[[ $baseline -eq 1 && $triage_routed -eq 1 ]] \
+  && refuse "--triage-routed contradicts --baseline (it is a plugin arm)"
 [[ -d "$fixture" && -f "$fixture/package.json" ]] \
   || refuse "fixture not found or not a project: $fixture"
 [[ -f "$fixture/.claude/rules/lcd-conventions.md" ]] \
@@ -162,6 +173,13 @@ if [[ $baseline -eq 1 ]]; then
   finish_label="EVAL-DONE marker"
   nudge="Continue building the 'stats' feature per the original instructions. Do not stop until the feature is complete with the full test suite green — then create a file named EVAL-DONE at the repository root as your final action. If hard-blocked, record why in BLOCKED.md and stop."
   plugin_args=()
+elif [[ $triage_routed -eq 1 ]]; then
+  # Lane-agnostic finish line: a triage-routed run may pick a lane that never writes
+  # audit.md, so the prompt's EVAL-DONE marker is the contract (same as the baseline arm).
+  finish_artifact="$workspace/EVAL-DONE"
+  finish_label="EVAL-DONE marker"
+  nudge="Continue the 'stats-surfaces' work per the original instructions, in whatever LCD lane triage selected (check docs/lcd/). Do not stop until the work is complete per that lane and the full test suite is green — then create a file named EVAL-DONE at the repository root as your final action. If hard-blocked, record why in the work-item JOURNAL (or BLOCKED.md) and stop."
+  plugin_args=(--plugin-dir "$plugin_dir")
 else
   finish_artifact="$workspace/docs/lcd/work/$slug/audit.md"
   finish_label="audit artifact"
