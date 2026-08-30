@@ -29,7 +29,7 @@ Don't run the script — its handler checks need plan.md's cross-path matrix, wh
    LCD_SPECS_DIR="<artifact-root>/work" audit-crosspath.sh <slug>
    ```
 
-   It reads spec.md ACs (via `parse-acs.sh`), plan.md's Cross-path matrix for the path per (AC × surface), checks each handler (`<file>:<token>` → file exists and contains the token; bare `<file>` → file exists), and greps the repo for a test carrying the literal `AC-N (SURFACE)`. It emits a markdown table and exits non-zero if any row is not `OK`.
+   It reads spec.md ACs (via `parse-acs.sh`), plan.md's Cross-path matrix for the path per (AC × surface), checks each handler (`<file>:<token>` → file exists and contains the token; bare `<file>` → file exists), and greps for a test carrying the literal `AC-N (SURFACE)` — inside the plan's `**Test scope:**` paths when declared (recommended: a stale literal left by another work-item can then never satisfy the gate), else repo-wide. It emits a markdown table and exits non-zero if any row is not `OK`.
 
 2. **Save the audit output** to `<artifact-root>/work/<slug>/audit.md` using `${CLAUDE_PLUGIN_ROOT}/templates/audit.md`. Fill the metadata (slug, run timestamp, PASS/BLOCKED) and paste the table from step 1.
 
@@ -44,11 +44,12 @@ Don't run the script — its handler checks need plan.md's cross-path matrix, wh
 
 ## On PASS (both lanes)
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/triage/references/closeout.md` and follow it in order:
-
-1. **`lcd-evaluator` dispatch** when the conventions block has `closeout-evaluator: on` — before the closeout line, findings to the JOURNAL LOG and the user before any PR suggestion.
-2. **The closeout line** via `lcd-triage-log.sh closeout` — audit result is `PASS (first run)`, `PASS (run N)`, or `PASS (test-presence)`; pull lane / re-routes / iterations / interventions from the JOURNAL.
-3. **`lcd:reconcile <slug>`** when `living-spec: on` (a no-op when off).
+Read `${CLAUDE_PLUGIN_ROOT}/skills/triage/references/closeout.md` and run its ONE closeout
+action: the `lcd-triage-log.sh closeout` line (audit result `PASS (first run)` / `PASS (run N)` /
+`PASS (test-presence)`; lane, re-routes, interventions from the JOURNAL; `--iters` optional) —
+with the `lcd-evaluator` dispatch folded in before the append (when `closeout-evaluator: on`;
+findings to the JOURNAL LOG and the user before any PR suggestion) and `lcd:reconcile <slug>`
+after it (when `living-spec: on`).
 
 Then suggest committing anything pending and running the full gate before `gh pr create`.
 
