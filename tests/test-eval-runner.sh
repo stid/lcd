@@ -64,12 +64,12 @@ assert_exit 2 "$code" "AC-4: missing model CLI refused (real run)"
 assert_contains "$out" 'model CLI' "AC-4: refusal names the model CLI"
 [[ ! -e "$tmp/ws2" ]] || fail "AC-4: refused run must not materialize a workspace"
 
-# --- triage-routed arm (lean-loop): standard prompt, EVAL-DONE finish line --------
+# --- AC-6 (EVAL) — triage-routed arm (lean-loop): standard prompt, EVAL-DONE finish line
 out="$(EVAL_CLAUDE_BIN=bash bash "$runner" --arm standard --triage-routed \
         --fixture "$fixture" --plugin-dir "$plugin" --results "$results" \
         --workspace "$tmp/ws-tr" --dry-run 2>&1)"; code=$?
 assert_exit 0 "$code" "triage-routed dry-run exits 0"
-assert_contains "$out" 'feature-prompt-standard.md' "triage-routed selects the standard prompt"
+assert_contains "$out" 'feature-prompt-standard.md' "AC-6 (EVAL): triage-routed selects the standard prompt"
 
 out="$(EVAL_CLAUDE_BIN=bash bash "$runner" --arm x --triage-routed --baseline \
         --fixture "$fixture" --dry-run 2>&1)"; code=$?
