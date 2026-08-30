@@ -51,7 +51,9 @@ The constitution check tells you *whether* parallel paths exist; this matrix tel
 | `AC-N` | EVAL | `<golden-dataset-file>` |
 | `<…>` | | |
 
-Every row becomes (a) a task in `tasks.md` and (b) a target row in `/lcd:audit`. The audit reads this matrix to look up the exact path per (AC × surface) — if a row is missing here, the audit refuses to run (BLOCKED).
+**Test scope:** `<test-file-or-dir>`, `<…>`
+
+Every row becomes (a) a task in `tasks.md` and (b) a target row in `/lcd:audit`. The audit reads this matrix to look up the exact path per (AC × surface) — if a row is missing here, the audit refuses to run (BLOCKED). The `**Test scope:**` line restricts the audit's `AC-N (SURFACE)` test grep to this work-item's own test paths — declare it (recommended) so a stale literal left by another work-item can never satisfy the gate; omit it and the grep stays repo-wide.
 
 Verify the **behavior** ("every surface emits the source label"), not just the **symbol** ("every caller of resolveX"). Symbol-level coverage misses parallel surfaces that don't share a code path.
 

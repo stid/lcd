@@ -6,6 +6,47 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.18.0] — 2026-08-30
+
+The lean-loop release: a three-reviewer over-engineering audit of the methodology (run from
+the dev harness; two independent Opus 5 reviewers plus a Fable fork, cross-examined to
+consensus) found the weight concentrated at the loop's finish line and on triage's hot path.
+This release removes it, and gives the benchmark the arm the audit said was missing.
+
+### Changed
+- **Closeout is ONE scripted action** (`skills/triage/references/closeout.md`): the single
+  `lcd-triage-log.sh closeout` append, with the opt-in evaluator dispatch folded in before it
+  and the opt-in `lcd:reconcile` fold after it — no longer a numbered multi-step contract.
+  `--iters` is now optional (`--lane`/`--audit`/`--reroutes`/`--interventions` stay
+  mandatory); both closeout line shapes — with and without `red-green iters` — are valid, and
+  existing logs are never rewritten.
+- **Triage skill slimmed ~1,930 → ~935 words** on the every-item path: the three lane
+  execution bodies moved to `skills/triage/references/lanes.md` (read only for the routed
+  lane), the re-routing procedure to `references/rerouting.md`, the worked-examples table
+  dropped, and the file-count-soft-proxy rationale deduplicated to a pointer at `rules/lcd.md`.
+- **`rules/ac-convention.md` slimmed to the format contract** (~1,040 → ~660 words on the
+  auto-load path): the EVAL-coverage / must-not essay now lives in `/lcd:specify` and the
+  worked AC examples in `/lcd:test-gen` — each at its point of use.
+
+### Added
+- **`evals/run-eval.sh --triage-routed`** — the median-lane benchmark arm the T1 campaign
+  lacked: a frozen prompt (`evals/feature-prompt-standard.md`, feature paragraph identical to
+  the Deep arm's) that routes through `lcd:triage` instead of mandating the Deep pipeline and
+  never names an expected lane; lane-agnostic `EVAL-DONE` finish line. Contradicts
+  `--baseline`.
+- **Plan `**Test scope:**` declaration** (template + audit): restricts the audit's
+  `AC-N (SURFACE)` test grep to the work-item's own test paths.
+
+### Fixed
+- **`bin/audit-crosspath.sh`: stale foreign AC literals can no longer produce an OK row**
+  when a test-scope is declared — the repo-wide first-match grep (the T1 audit's recorded
+  false-positive source) is now scoped, with a declared-but-missing scope counting as a miss,
+  never a fallback. Scope-less plans keep the legacy behavior.
+- **`bin/lcd-boundary-check.sh`: `{a,b}` boundary entries now match.** `case` patterns never
+  brace-expand, so a brace entry could match nothing and silently denied every edit under it
+  (open since 0.15.1); entries are now brace-expanded (`lcd_expand_braces` in
+  `bin/lcd-hooklib.sh`) at match time, with the original entry kept in the deny reason.
+
 ## [0.17.1] — 2026-08-28
 
 Repair of the 0.17.0 isolation contract, found by the independent closeout evaluator

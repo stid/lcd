@@ -37,9 +37,8 @@ Count how many signals fire toward the heavier columns:
 | Cold-pickup plausibility | one sitting | may span a session | multi-session / multi-phase |
 | Silently-wrong risk | none | low | scorer/ranker/LLM-output → EVAL |
 
-**File count is a soft proxy** — post-1M it measures coordination/review cost, not "will it fit," so
-it is **not** a hard Deep trigger. Resumability (cold-pickup) and the hard triggers carry the real
-routing; the cap in Step 2 keeps pure file-count accumulation from reaching Deep.
+File count is a soft proxy, not a hard Deep trigger — the rationale lives in the `lcd` rule
+(`rules/lcd.md`); the cap in Step 2 is what keeps pure file-count accumulation from reaching Deep.
 
 ## Step 2 — route
 
@@ -67,16 +66,6 @@ Format: `LCD → <Lane> (<n> signals): <artifact note>. <one-clause reason>.`
 e.g. `LCD → Standard (3 signals): single JOURNAL at docs/lcd/work/export-csv/. 4 files, 1 surface, reversible, may span a session.`
 Do not over-explain. One line, then act.
 
-### Worked examples (the routing edges)
-
-| Work | Signals firing | Hard trigger? | Risk signal? | Lane |
-|---|---|---|---|---|
-| Rename a config key across 6 files, local refactor, one-commit revert, may span a session | 4 (all Standard-level) | no | no | **Standard** |
-| Same scope, but a deliberate multi-session migration effort | 4 | no | yes (multi-session) | **Deep** |
-| Add CSV export — 4 files, 1 HTTP surface, reversible, one sitting | 2 | no | no | **Standard** |
-| Add a relevance scorer (EVAL surface), 2 files | 1 | yes (EVAL) | — | **Deep** |
-| New auth module with a schema migration | 2+ | yes (arch + irreversibility) | — | **Deep** |
-
 ## Step 4 — log the routing decision (telemetry)
 
 One append per triage — this is how LCD measures itself instead of just asserting "most work is
@@ -93,114 +82,29 @@ per-work-item artifact, so Quick's "no work-item folder" identity is unchanged. 
 summarizes the distribution. If the project isn't onboarded yet (no `lcd-conventions.md` /
 artifact-root), skip the log — there's nowhere to put it.
 
-### Closeout (outcome telemetry — the other half of the loop)
-
-The triage line records which lane an item *got*; the **closeout** records whether the lane was
-*right*. When a Standard/Deep work-item reaches its finish line (audit PASS, or the JOURNAL NOW
-flips to done for surface-less work), read
-`${CLAUDE_PLUGIN_ROOT}/skills/triage/references/closeout.md` at that moment and follow it — it
-carries the closeout log line, the opt-in independent evaluator, and the living-spec fold, in
-order. It lives outside this skill so the common triage-time path never pays for it. **Quick lane
-gets no closeout** — there is no work-item to close; its triage line is its whole trace (a Quick
-item that *escalated* leaves the escalation triage line, which is the signal).
+**Closeout (the other half of the loop):** when a Standard/Deep work-item reaches its finish
+line (audit PASS, or the JOURNAL NOW flips to done for surface-less work), read
+`${CLAUDE_PLUGIN_ROOT}/skills/triage/references/closeout.md` at that moment and follow it —
+one scripted action. Quick lane gets no closeout; its triage line is its whole trace.
 
 ---
 
-## Lane: Quick
+## Execute the lane
 
-No artifacts. No subagents. Implement directly, honoring the global TDD rules (test first where a
-test makes sense). If a genuine decision gets made along the way, record it as a `D-NNN` block in
-`<artifact-root>/DECISIONS.md` (the template's format — a one-line free-form append breaks the
-`D-NNN` referencing SPEC provenance depends on). That's it — do not create a work-item folder.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/triage/references/lanes.md` **for the lane the verdict
+picked** — it carries the Quick / Standard / Deep execution contracts (artifacts, TDD order,
+audit, fan-out gate). It lives outside this skill so scoring never pays for the two lanes not
+taken. Don't execute a lane from memory of it.
 
-**Staleness marker (only when `living-spec: on`):** if the change alters behaviour already indexed
-in `SPEC.md`, append `· stale: <date>` to that row's Provenance cell — a one-cell marker, **not** a
-fold (no behaviour rewrite, no AC claim; folding stays Standard/Deep-only). The marker tells the
-next reader "this row may lag reality"; the next `reconcile` that folds the capability clears it.
-Skip when the change doesn't touch an indexed capability — most Quick work doesn't.
-
-## Lane: Standard
-
-One file carries the work: `<artifact-root>/work/<slug>/JOURNAL.md` (copy the JOURNAL template from
-`${CLAUDE_PLUGIN_ROOT}/templates/JOURNAL.md`). Then:
-
-1. **recon** (`lcd:recon`) if the work involves a library/API/pattern whose current best
-   practice you're not certain of — run it in a subagent, write findings into the JOURNAL LOG and
-   any durable choice into DECISIONS.md. Skip if the work is plainly within known territory.
-2. **Fill the JOURNAL:** Goal, granular STEPS (tests-first ordering), EDIT BOUNDARY (the files you
-   expect to touch), and — only if a surface needs the audit — inline ACs in the AC-N format.
-3. **Build TDD:** for each STEP, write the failing test, make it pass minimally, keep STEPS +
-   NOW.Next-action current as you go (so a reset resumes cleanly). Commit per meaningful step.
-4. **verify:** if the change has a UI/RENDER surface, drive the app through the `claude-in-chrome`
-   MCP tools (or the host project's own run/verify tooling, if it has any) to confirm it actually
-   behaves; otherwise the test suite is the verification.
-5. **audit (only if a surface was declared):** run `/lcd:audit <slug>` before a PR. For
-   Standard it performs the **test-presence check** (each inline `AC-N (SURFACE)` has a passing
-   test carrying that literal token); the full cross-path script needs Deep's spec+plan.
-6. Keep the JOURNAL's NOW.Next-action accurate at the end (e.g. "open PR" or "done").
-
-## Lane: Deep
-
-Run the absorbed pipeline; each phase command resolves the artifact root and updates the JOURNAL:
-
-```
-recon (lcd:recon, subagent)   →  current best practice feeds the plan
-/lcd:specify <slug> "<feature>" →  spec.md (+ seeds JOURNAL)
-/lcd:plan <slug>                →  plan.md (architecture, Constitution, cross-path matrix)
-/lcd:tasks <slug>               →  tasks.md (TDD-ordered; mirrored into JOURNAL STEPS)
-/lcd:test-gen <slug>            →  failing tests (one per AC × surface)
-lcd:redgreen-loop (skill)       →  per-fix commits until green
-/lcd:audit <slug>               →  PR-creation gate
-```
-
-RENDER surfaces additionally get a live check via the `claude-in-chrome` MCP before audit.
-
-For **parallel independent surfaces**, you MAY fan out one implementer subagent per surface, each
-scoped to its EDIT BOUNDARY rows (the orchestrator holds only the per-surface digests, never the
-bulk diffs). **Fan-out must earn its token multiple:** a subagent-per-surface run costs several
-times a single-session build (Anthropic's own multi-agent measurements put such flows at many times
-single-session token use). The gate is **test-independence**: fan out only when the committed
-baseline's failing tests already partition the work — each surface's `AC-N (SURFACE)` tests can be
-made to pass without touching another surface's boundary — AND at least two surfaces are
-individually substantial. (This is the condition under which parallel implementers demonstrably
-work; when the work collapses into one shared problem, parallel agents re-solve each other's task.)
-Surfaces that share most of one code path, or a feature one sitting covers sequentially, stay
-in-session — the pipeline above is fully Deep with zero subagents.
-
-When fan-out is warranted: **commit a baseline first** (spec/plan/tasks + failing tests), then read
-`${CLAUDE_PLUGIN_ROOT}/skills/triage/references/fanout.md` at that moment — it carries the
-mechanics (default async worktree-isolated `lcd-implementer` dispatch, the opt-in `Workflow`
-variant, the per-surface digest contract, the reconcile/merge procedure). Don't dispatch from
-memory of it; it lives outside this skill precisely so the common no-fan-out triage never pays
-for it.
-
-Phase commands refuse if the prior artifact is missing — that gate is the point.
-
-## Resuming and refining
+## Resuming, refining, re-routing
 
 - A context reset mid-work-item → `/lcd:resume <slug>` rebuilds from MAP + the JOURNAL
   resume block + DECISIONS headers in <~2k tokens.
-- If you discover mid-flight that a STEP/task/MAP entry is wrong, invoke `lcd:refine` — it
-  corrects the artifact and logs the change without waiting to be asked.
-
-## Re-routing mid-flight (triage isn't one-shot)
-
-Triage scores up front with imperfect information. If the lane proves wrong, **correct the lane** —
-don't restart, and don't soldier on in the wrong one. `refine` fixes a wrong STEP/MAP entry *within*
-a lane; re-routing fixes the lane itself.
-
-- **Escalate** when the work outgrows its lane:
-  - **Quick → Standard:** open `work/<slug>/JOURNAL.md` and backfill STEPS + EDIT BOUNDARY from what
-    you've already done — carry the work forward, don't lose it.
-  - **Standard → Deep:** seed `spec.md` / `plan.md` / `tasks.md` from the JOURNAL; keep the JOURNAL as
-    the resume anchor above the pipeline, don't discard it.
-- **De-escalate** when the work proved smaller than scored (**Deep → Standard**, **Standard → Quick**):
-  collapse to the lighter artifact. The lighter lane wins ties, so de-escalation is *encouraged*, not
-  grudging.
-- **Either way, record the reason** — one line in the JOURNAL NOW/LOG and a `D-NNN` in `DECISIONS.md`
-  (e.g. "re-routed Standard→Deep: the migration turned out irreversible"). The *why* is what a cold
-  session needs. Append a fresh `triage-log.md` line (Step 4) for the new lane so the log reflects
-  where the work actually ran.
+- A STEP/task/MAP entry that proved wrong mid-flight → invoke `lcd:refine`; it corrects the
+  artifact and logs the change without waiting to be asked.
+- The **lane itself** proved wrong → read
+  `${CLAUDE_PLUGIN_ROOT}/skills/triage/references/rerouting.md` and correct the lane (escalate
+  or de-escalate) — don't restart, don't soldier on in the wrong one.
 
 ## Keep it light (the whole point)
 

@@ -25,9 +25,15 @@ Produce `<artifact-root>/work/<slug>/spec.md` — a complete what-and-why spec f
 - Every template section is genuinely filled: Problem, at least one user story (`As a <role>, I want <X>, so that <Y>`), Acceptance criteria, a non-empty Out of scope, Open questions. Metadata too (title, slug, date, related issue or "none").
 - **No tech stack in the spec** — no language, framework, database, file paths, or function names. Tech details the user volunteers become a note for `plan.md`, not spec content.
 - **Every AC follows `**AC-N** (surfaces: <CSV>)`** with tokens from the fixed vocabulary `CLI | HTTP | MCP | RENDER | DB | EVAL | none`, uses only the applicable subset, cross-checked against `MAP.md`'s "Surfaces in use", and is testable (an assertion could prove it).
-- **EVAL coverage:** a feature touching a path whose output can be *silently wrong* (scorer, ranker, recommender, LLM output) carries at least one `EVAL` AC — or you're prepared to justify its absence in `plan.md` (see the ac-convention rule).
+- **EVAL coverage:** a feature touching a path whose output can be *silently wrong* (scorer, ranker, recommender, LLM output) carries at least one `EVAL` AC — or you're prepared to justify its absence in `plan.md`. See "EVAL coverage" below.
 - Material branch points go through `AskUserQuestion`; simple fact-gathering stays inline; durable decisions are mirrored into `<artifact-root>/DECISIONS.md`.
 - Finish by telling the user the spec path and which open questions still block `/lcd:plan <slug>`.
+
+## EVAL coverage (when an EVAL AC is required)
+
+A spec that changes a path whose output can be **silently wrong** — a scorer, a ranker, a recommender, any LLM-generated output — SHOULD include at least one `EVAL` acceptance criterion, OR `plan.md`'s constitution check should state why an eval isn't warranted. Quality regressions in these paths are silent ("plausible but wrong"), so they need a measured gate (error metric, tolerance band, regression bound), not just a presence test. Features with no quality dimension (CRUD endpoints, CLI flags, render tweaks) do not need an EVAL AC. The golden-dataset and the metric harness are **project-local and opt-in** — the framework only asks that the AC name a measurable threshold over a frozen dataset.
+
+State the **must-not** too. For LLM-output / scorer / ranker paths the forbidden behavior is often the load-bearing half of "good" — the failure that embarrasses you is rarely the absence of a positive trait, it's the presence of a bad one (leaks a raw policy paragraph, re-asks for information already supplied, fabricates a citation). A purely positive Given/When/Then ("acknowledges the issue") can pass while the output is still unacceptable. So an `EVAL` AC over a silently-wrong path SHOULD pin at least one explicit must-not / forbidden behavior, phrased *within the AC body* ("…, then the response does NOT do X") or as a **companion negative-bodied AC** — using the ordinary AC format, **not** a new field. The golden dataset then carries the counter-examples (inputs paired with a response that would fail), so the measured gate scores the must-not, not just the must.
 
 ## What NOT to do
 

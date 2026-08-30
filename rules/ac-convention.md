@@ -35,21 +35,9 @@ LCD's Deep-lane test-generation phase (`/lcd:test-gen`) parses these declaration
 
 If a spec uses `1.`, `2.` ordinals without an explicit `(surfaces: ...)` tag, both phases fail closed.
 
-## Examples
-
-```
-**AC-1** (surfaces: CLI, HTTP, MCP): Given a config key is set in the environment, when any path resolves that key, then the environment value is used.
-
-**AC-2** (surfaces: HTTP): Given /api/doctor is called, when the env-var source supplies the key, then the response includes a `key_source` field set to "env".
-
-**AC-3** (surfaces: none): The resolver returns the first non-empty source in the precedence chain (env → config file).
-
-**AC-4** (surfaces: EVAL): Given the frozen reference set, when the scorer's calibration error is measured, then the mean absolute error stays at or below the declared threshold.
-
-**AC-5** (surfaces: EVAL): Given the frozen counter-example set, when the assistant answers a wrong-item complaint, then the response does NOT emit a raw policy paragraph and does NOT ask for information already supplied in the message.
-```
-
-`AC-5` is the must-not companion: same EVAL format, body phrased as a forbidden behavior, scored against counter-examples in the golden dataset.
+Worked examples live at their point of use in `/lcd:test-gen` (the phase that parses them);
+the EVAL-coverage guidance (when an EVAL AC is required, the must-not rule) lives in
+`/lcd:specify` (the phase that writes ACs).
 
 ## Surface token rules
 
@@ -57,12 +45,6 @@ If a spec uses `1.`, `2.` ordinals without an explicit `(surfaces: ...)` tag, bo
 - Use `EVAL` when the AC promises a measurable quality bar over a frozen golden dataset (e.g. "calibration MAE stays ≤ 0.15 on the reference set"). `none` combines with nothing; `EVAL` is **mixable** with any real surface (e.g. `MCP, EVAL` when an eval guards a tool's output) — but, like every token, never with `none`. The plan matrix row for an `EVAL` AC points at the golden-dataset file; test-gen emits the eval into the project's test tree; the audit confirms the dataset file exists. Non-deterministic evals (e.g. an LLM call) must `skipIf` a missing API key so they don't gate keyless CI.
 - `RENDER` and `CLI` are distinct: `CLI` covers the subcommand handler; `RENDER` covers the formatter that produces display output. An AC might apply to one but not the other.
 - `DB` is only used when the AC promises a direct DB invariant (e.g. "every row in `accounts` has a non-null `owner_id`"). DB writes that happen as a side effect of a CLI/HTTP/MCP call are covered by those surfaces.
-
-## EVAL coverage (when an EVAL AC is required)
-
-A spec that changes a path whose output can be **silently wrong** — a scorer, a ranker, a recommender, any LLM-generated output — SHOULD include at least one `EVAL` acceptance criterion, OR `plan.md`'s constitution check should state why an eval isn't warranted. Quality regressions in these paths are silent ("plausible but wrong"), so they need a measured gate (error metric, tolerance band, regression bound), not just a presence test. Features with no quality dimension (CRUD endpoints, CLI flags, render tweaks) do not need an EVAL AC. The golden-dataset and the metric harness are **project-local and opt-in** — the framework only asks that the AC name a measurable threshold over a frozen dataset.
-
-State the **must-not** too. For LLM-output / scorer / ranker paths the forbidden behavior is often the load-bearing half of "good" — the failure that embarrasses you is rarely the absence of a positive trait, it's the presence of a bad one (leaks a raw policy paragraph, re-asks for information already supplied, fabricates a citation). A purely positive Given/When/Then ("acknowledges the issue") can pass while the output is still unacceptable. So an `EVAL` AC over a silently-wrong path SHOULD pin at least one explicit must-not / forbidden behavior, phrased *within the AC body* ("…, then the response does NOT do X") or as a **companion negative-bodied AC** — using the ordinary AC format, **not** a new field. The golden dataset then carries the counter-examples (inputs paired with a response that would fail), so the measured gate scores the must-not, not just the must.
 
 ## Linkbacks
 
