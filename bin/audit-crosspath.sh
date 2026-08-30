@@ -104,21 +104,49 @@ registry_hit() {
   fi
 }
 
-# Find a test carrying the literal `AC-N (SURFACE)` string anywhere in the repo
-# (test name for JS/TS, docstring/id for pytest, comment for Go/Rust) — except
-# the LCD artifact tree: tasks.md / JOURNAL checklist lines carry the same
-# literal by convention and must never satisfy the gate.
+# Work-item test-scope (lean-loop, AC-4). A plan may declare
+#   **Test scope:** `tests/a.sh`, `tests/sub/`
+# — then ONLY files under those paths may satisfy the test gate, so a stale
+# `AC-N (SURFACE)` literal left by another work-item elsewhere in the repo can
+# never produce an OK row. Absent declaration → legacy repo-wide grep (older
+# work-items keep auditing unchanged).
+test_scope_paths() {
+  sed -n 's/^\*\*Test scope:\*\*[[:space:]]*//p' "$plan" | head -1 \
+    | tr -d '`' | tr ',' '\n' \
+    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+}
+
+# Find a test carrying the literal `AC-N (SURFACE)` string — inside the plan's
+# test-scope when declared, else anywhere in the repo (test name for JS/TS,
+# docstring/id for pytest, comment for Go/Rust) — except the LCD artifact tree:
+# tasks.md / JOURNAL checklist lines carry the same literal by convention and
+# must never satisfy the gate.
 test_hit() {
   local ac="$1" surface="$2"
   local lit="$ac ($surface)"
   local artifact_dir="${specs_dir%/*}"
-  local hit
-  hit="$(grep -rnF \
+  local hit scope declared=0 targets=()
+  while IFS= read -r scope; do
+    [[ -z "$scope" ]] && continue
+    declared=1
+    # scope cells are PR-modifiable content — reject escapes, same as plan paths.
+    case "$scope" in /*|*..*) continue ;; esac
+    [[ -e "$root/${scope%/}" ]] && targets+=("$root/${scope%/}")
+  done < <(test_scope_paths)
+  if [[ $declared -eq 1 ]]; then
+    # Scope declared → it is the whole search space; a missing scope file is a miss,
+    # never a fallback to the repo-wide grep.
+    hit=""
+    [[ ${#targets[@]} -gt 0 ]] \
+      && hit="$(grep -rnF -- "$lit" "${targets[@]}" 2>/dev/null | head -1 || true)"
+  else
+    hit="$(grep -rnF \
         --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=target \
         --exclude-dir=dist --exclude-dir=build --exclude-dir=.worktrees \
         --exclude-dir=vendor --exclude-dir=.venv \
         -- "$lit" "$root" 2>/dev/null \
       | awk -v p="$root/$artifact_dir/" 'index($0, p) != 1' | head -1 || true)"
+  fi
   if [[ -n "$hit" ]]; then
     local file line
     file="$(printf '%s' "$hit" | cut -d: -f1)"
