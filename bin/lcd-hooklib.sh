@@ -91,6 +91,25 @@ lcd_active_journals() {
   done
 }
 
+# lcd_expand_braces <entry> — brace-expand a boundary entry: print one line per
+# alternative of every `{a,b,…}` group (recursive, so nested/multiple groups work).
+# `case` patterns honor `*` globs but NEVER brace-expand, so an unexpanded `{a,b}`
+# entry can match nothing — silently denying every edit it was meant to allow.
+# Entries without braces pass through unchanged.
+lcd_expand_braces() {
+  local e="$1"
+  if [[ "$e" == *"{"*"}"* ]]; then
+    local pre="${e%%\{*}" rest="${e#*\{}"
+    local body="${rest%%\}*}" post="${rest#*\}}"
+    local alt IFS=','
+    for alt in $body; do
+      lcd_expand_braces "$pre$alt$post"
+    done
+  else
+    printf '%s\n' "$e"
+  fi
+}
+
 # lcd_journal_boundary <journal> — print the EDIT BOUNDARY entries, one per line,
 # backticks/bullets stripped. Placeholder entries (containing `<`) are skipped.
 #

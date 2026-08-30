@@ -49,10 +49,15 @@ done < <(lcd_active_journals)
 
 for entry in "${boundary[@]}"; do
   entry="${entry%/}"
-  # Exact path, path under a boundary dir, or glob entry (case patterns honor *).
-  case "$rel" in
-    $entry|$entry/*) exit 0 ;;
-  esac
+  # Brace entries are expanded to their alternatives at match time (lcd_expand_braces
+  # in hooklib) — `case` never brace-expands, so matching the raw `{a,b}` entry would
+  # silently deny everything under it. The deny reason below keeps the original entry.
+  while IFS= read -r exp; do
+    # Exact path, path under a boundary dir, or glob entry (case patterns honor *).
+    case "$rel" in
+      $exp|$exp/*) exit 0 ;;
+    esac
+  done < <(lcd_expand_braces "$entry")
 done
 
 reason="LCD edit boundary: '$rel' is outside the EDIT BOUNDARY of the active work-item(s) [$slugs] on this branch. Boundary: $(printf '%s; ' "${boundary[@]}")— if the plan legitimately needs this path, first add it to the JOURNAL EDIT BOUNDARY (lcd:refine, logged), then retry the edit."

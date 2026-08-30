@@ -86,4 +86,51 @@ rm "$proj/tests/lean.test.ts"
 out="$(LCD_ROOT="$proj" LCD_SPECS_DIR=docs/lcd/work bash "$PLUGIN_BIN/audit-crosspath.sh" lean 2>&1)"; code=$?
 assert_exit 0 "$code" "AC-4 (CLI): scope-less plan keeps legacy repo-wide grep"
 
+# ============================================================================
+# AC-5 (CLI): boundary hook brace-expand — {a,b} alternatives actually match
+# ============================================================================
+# Before the fix, `{src,lib}/shared/**` passed through unsplit but could never
+# match in `case` — every edit under such a boundary entry was silently denied.
+projC="$tmp/projC"
+mkdir -p "$projC/.claude/rules" "$projC/docs/lcd/work/braces" \
+         "$projC/src/shared" "$projC/lib/shared" "$projC/src/other"
+git -C "$projC" init -q -b feat/braces
+
+cat > "$projC/.claude/rules/lcd-conventions.md" <<'EOF'
+<!-- lcd-conventions:v1 -->
+artifact-root: docs/lcd
+<!-- /lcd-conventions -->
+EOF
+
+cat > "$projC/docs/lcd/work/braces/JOURNAL.md" <<'EOF'
+<!-- lcd-resume:v1 -->
+## NOW
+- **Lane:** Standard
+- **Branch:** feat/braces  ·  **Updated:** 2026-08-30
+
+## STEPS
+- [ ] S1 — pending  ← next
+
+## EDIT BOUNDARY (paths this work may touch)
+- `{src,lib}/shared/**`
+<!-- /lcd-resume -->
+EOF
+
+run_boundary() {
+  CLAUDE_PROJECT_DIR="$projC" bash "$PLUGIN_BIN/lcd-boundary-check.sh" <<EOF
+{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"$1"}}
+EOF
+}
+
+out="$(run_boundary "$projC/src/shared/util.ts")"; code=$?
+assert_exit 0 "$code" "AC-5 (CLI): brace alternative exits 0"
+[[ -z "$out" ]] || fail "AC-5 (CLI): edit under first brace alternative must be allowed, got: $out"
+
+out="$(run_boundary "$projC/lib/shared/util.ts")"
+[[ -z "$out" ]] || fail "AC-5 (CLI): edit under second brace alternative must be allowed, got: $out"
+
+out="$(run_boundary "$projC/src/other/file.ts")"
+assert_contains "$out" '"permissionDecision":"deny"' \
+  "AC-5 (CLI): path outside every brace alternative is still denied"
+
 echo "test-lean-loop-fixes: all assertions passed"
