@@ -4,7 +4,7 @@
 > benchmark runs are deterministic — do NOT re-run `/onboard` here. The machine block
 > below is read by the LCD suite; keep its keys intact.
 
-**Generated:** 2026-06-11 (frozen fixture state)
+**Generated:** 2026-06-11 (frozen fixture state) · **Revised:** 2026-09-04 (`closeout-evaluator: on` — T1-5.1: the opt-in evaluator's cost lands in the benchmark row instead of being priced at zero)
 
 ## Machine block (read by the LCD suite — do not rename keys)
 
@@ -21,6 +21,7 @@ single-test: node --test --test-name-pattern {name} tests/
 gate: node --test tests/
 eval: n/a — deterministic node:test suite, no scored/LLM output
 maintenance-bundle: node --test tests/
+closeout-evaluator: on
 <!-- /lcd-conventions -->
 
 Key notes: plain Node.js, zero external dependencies — the runner is the built-in

@@ -35,8 +35,9 @@
 # is inert). The arms differ by exactly one flag: the plugin arm adds --plugin-dir.
 # Env:
 #   EVAL_CLAUDE_BIN    model CLI (default: claude)
-#   EVAL_CLAUDE_MODEL  model for the run (default: claude-fable-5 — the experiment's premise
-#                      is Fable 5 behavior; pin explicitly, never trust the CLI default)
+#   EVAL_CLAUDE_MODEL  model for the run (default: claude-fable-5-1, the tier sessions run on
+#                      since 2026-09; rows before that ran claude-fable-5 — pin explicitly,
+#                      never trust the CLI default; rows compare only within one id, D-015)
 #   EVAL_CLAUDE_FLAGS  extra flags for the model call
 #                      (default: --output-format json --dangerously-skip-permissions)
 #   EVAL_MAX_LEGS      max model legs per run (default: 8). A single -p turn often ends
@@ -78,7 +79,7 @@ done
 [[ -n "$arm" ]] || { usage; exit 2; }
 
 claude_bin="${EVAL_CLAUDE_BIN:-claude}"
-claude_model="${EVAL_CLAUDE_MODEL:-claude-fable-5}"
+claude_model="${EVAL_CLAUDE_MODEL:-claude-fable-5-1}"
 claude_flags="${EVAL_CLAUDE_FLAGS:---output-format json --dangerously-skip-permissions}"
 max_legs="${EVAL_MAX_LEGS:-8}"
 if [[ $baseline -eq 1 ]]; then
