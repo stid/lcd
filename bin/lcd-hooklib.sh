@@ -113,9 +113,9 @@ lcd_expand_braces() {
 # lcd_journal_boundary <journal> — print the EDIT BOUNDARY entries, one per line,
 # backticks/bullets stripped. Placeholder entries (containing `<`) are skipped.
 #
-# One bullet may carry more than one path (`- a.md, b.md`) or a trailing note
-# (`- a.md (deleted)`) — humans write boundaries that way, and treating the whole bullet
-# as one path silently denies every edit it lists. So: split on commas, drop a trailing
+# One bullet may carry more than one path (`- a.md, b.md` / `- a.md · b.md` / `- a.md; b.md`)
+# or a trailing note (`- a.md (deleted)`) — humans write boundaries that way, and treating the
+# whole bullet as one path silently denies every edit it lists. So: split on `,` `·` `;`, drop a trailing
 # parenthesised note. A brace glob (`{src,lib}/**`) keeps its commas — there they are
 # pattern, not separator — and `(group)` path segments are untouched because a note is
 # only recognised after whitespace.
@@ -126,7 +126,7 @@ lcd_journal_boundary() {
     | tr -d '`' \
     | awk '
         {
-          n = (index($0, "{") > 0) ? 0 : split($0, part, /,[[:space:]]*/)
+          n = (index($0, "{") > 0) ? 0 : split($0, part, /[[:space:]]*(,|;|·)[[:space:]]*/)
           if (n == 0) { n = 1; part[1] = $0 }
           for (i = 1; i <= n; i++) {
             e = part[i]

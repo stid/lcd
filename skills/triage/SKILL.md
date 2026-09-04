@@ -68,8 +68,8 @@ Do not over-explain. One line, then act.
 
 ## Step 4 — log the routing decision (telemetry)
 
-One append per triage — this is how LCD measures itself instead of just asserting "most work is
-Quick". After stating the verdict, append the line via the plugin's writer script (ships in
+One append per triage — this is how LCD measures its own lane distribution instead of asserting
+it. After stating the verdict, append the line via the plugin's writer script (ships in
 `bin/`, on PATH; it validates the shape and creates the log with its header if missing):
 
 ```bash
@@ -99,7 +99,7 @@ taken. Don't execute a lane from memory of it.
 ## Resuming, refining, re-routing
 
 - A context reset mid-work-item → `/lcd:resume <slug>` rebuilds from MAP + the JOURNAL
-  resume block + DECISIONS headers in <~2k tokens.
+  resume block + DECISIONS headers (target <~2k tokens).
 - A STEP/task/MAP entry that proved wrong mid-flight → invoke `lcd:refine`; it corrects the
   artifact and logs the change without waiting to be asked.
 - The **lane itself** proved wrong → read
@@ -108,5 +108,5 @@ taken. Don't execute a lane from memory of it.
 
 ## Keep it light (the whole point)
 
-Most work is Quick. The lanes exist so the *rare* large feature is organized and resumable — not so
-every task carries ceremony. When in doubt, the lower lane.
+The lanes exist so the large feature is organized and resumable — not so every task carries
+ceremony. When in doubt, the lower lane.

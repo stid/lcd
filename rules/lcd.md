@@ -14,9 +14,8 @@ resumability* (no window survives `/clear` or a new session; durable artifacts d
 justified by cost and resumability discipline, not by "it won't fit." Process weight adapts to the
 work, and durable artifacts make a context reset cheap. Coverage correctness (the cross-path audit)
 is preserved — but subordinated to context economy: the heavy pipeline is one *lane*, not the default.
-The newest model tier sharpens both halves: a denser tokenizer raises the per-token price of bloat,
-and the same models do better with a durable memory surface plus a full task spec served up front
-on a cold start — exactly the role of MAP / DECISIONS / JOURNAL.
+Current models do better with a durable memory surface plus a full task spec served up front on a
+cold start — exactly the role of MAP / DECISIONS / JOURNAL.
 
 ## Three lanes (chosen by `lcd:triage`)
 
@@ -83,7 +82,7 @@ project's index empty until new work churns through it; the backfill is what mak
 - **tidy** (`/lcd:tidy`) — prune stale work-items + run the maintenance bundle.
 - **redgreen-loop** (`lcd:redgreen-loop`) — the autonomous TDD loop.
 - **audit** (`/lcd:audit`) — the cross-path PR gate.
-- **resume** (`/lcd:resume`) — rebuild context in <~2k tokens after a reset.
+- **resume** (`/lcd:resume`) — rebuild context from the small anchor after a reset (target <~2k tokens).
 
 ## Multi-agent rule
 
@@ -102,7 +101,11 @@ project, a missing dependency, or an unfilled artifact always means "allow":
 - **Edit boundary (PreToolUse).** While a work-item is *active* on the current branch (JOURNAL
   `Branch` matches HEAD and STEPS has unchecked items), edits outside its EDIT BOUNDARY are denied
   at the tool layer — the deny reason points at the fix (`lcd:refine` to extend the boundary,
-  logged). The artifact root and `.claude/` stay always-editable.
+  logged). The artifact root and `.claude/` stay always-editable. **Scope:** the hook matches
+  `Edit`/`Write`-family tool calls; a file changed through the `Bash` tool (sed, heredocs) is not
+  seen, so under a Bash-first session the boundary is instructed, not structural. Deliberately
+  not extended to `Bash` — enforcing a boundary from a command string means parsing shell, which
+  either misses cases or over-denies and breaks fail-open.
 - **Cold-start context (SessionStart).** Every session in an onboarded project starts with ~10
   injected lines: artifact-root, MAP/DECISIONS paths, and active work-items with lane + next
   action — so resume happens even when nobody types `/lcd:resume`. The same hook covers
