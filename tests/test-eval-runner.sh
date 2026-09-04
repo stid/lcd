@@ -29,6 +29,7 @@ out="$(EVAL_CLAUDE_BIN=bash bash "$runner" --arm A --fixture "$fixture" \
         --plugin-dir "$plugin" --results "$results" --workspace "$ws" --dry-run 2>&1)"; code=$?
 assert_exit 0 "$code" "AC-1 (CLI): dry-run exits 0"
 assert_contains "$out" 'DRY RUN' "AC-1 (CLI): dry-run banner printed"
+assert_contains "$out" '--model claude-fable-5-1 ' "AC-1 (CLI): default model is the current tier (D-015: rows stamp it)"
 assert_contains "$out" "$fixture" "AC-1 (CLI): plan names the fixture"
 assert_contains "$out" 'arm: A' "AC-1 (CLI): plan names the arm"
 assert_contains "$out" 'stats-surfaces' "AC-1 (CLI): plan names the scripted slug"

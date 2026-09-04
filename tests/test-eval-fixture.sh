@@ -20,6 +20,8 @@ grep -q '"dependencies"' "$fixture/package.json" \
 [[ -f "$fixture/.claude/rules/lcd-conventions.md" ]] || fail "fixture not onboarded (conventions missing)"
 grep -q 'artifact-root: docs/lcd' "$fixture/.claude/rules/lcd-conventions.md" \
   || fail "fixture conventions must pin artifact-root docs/lcd"
+grep -q '^closeout-evaluator: on' "$fixture/.claude/rules/lcd-conventions.md" \
+  || fail "fixture must enable closeout-evaluator (T1-5.1 premise: the evaluator's cost lands in the row)"
 [[ -f "$fixture/docs/lcd/MAP.md" ]] || fail "fixture MAP.md missing"
 [[ -f "$fixture/docs/lcd/DECISIONS.md" ]] || fail "fixture DECISIONS.md missing"
 

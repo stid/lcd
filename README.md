@@ -109,10 +109,12 @@ plugin ships its own benchmark: [`evals/run-eval.sh`](evals/run-eval.sh) drives 
 Deep-lane run against a frozen fixture and a chosen plugin variant, and a golden-locked grader
 emits one comparable result row per run (audit outcome, suite state, build-loop commits, token
 cost; rows compare only within one model id). Measured so far (`evals/results.md`, n=3 per arm,
-one fixture, `claude-fable-5`): the Deep pipeline costs ~4.4× a bare agent and the median
-Standard lane ~2.1×, at near-parity single-shot quality — process weight buys resumability,
-not single-shot quality, and the cross-session half is the open measurement (longitudinal eval
-planned). Prompt changes ship with an eval row as evidence,
+one fixture, `claude-fable-5-1`, 2026-09): the Deep pipeline costs ~4.2× a bare agent and the
+median Standard lane ~2.4× (independent closeout evaluator included), at parity single-shot
+quality on a persisted rubric (`evals/quality/`) — process weight buys resumability, not
+single-shot quality; the evaluator caught real defects the green suite missed in 3 of 6 plugin
+runs; the cross-session half is the open measurement (longitudinal eval planned). Prompt
+changes ship with an eval row as evidence,
 and A/B arms have decided real design questions — step enumeration was dropped from three phase
 commands and kept in `test-gen` on measured cost and quality, not taste. A 2026 survey of
 spec-driven frameworks (arXiv 2606.04967) names the absence of process benchmarks as a
