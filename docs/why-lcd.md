@@ -39,10 +39,9 @@ compaction handling, and structured note-taking. LCD's skills also load by **pro
 disclosure** — name and description up front, the full instruction set only when relevant —
 the same discipline applied to the methodology's own footprint.
 
-Newer model tiers tilt the math further, not back: a denser tokenizer turns the same
-content into more tokens, so context economy is worth more in plain cost terms — and durable
-artifacts make a reset cheap because the next session reads a small anchor instead of
-replaying the whole history, which is precisely what LCD's artifacts are.
+Newer model tiers don't tilt the math back: durable artifacts make a reset cheap because
+the next session reads a small anchor instead of replaying the whole history, which is
+precisely what LCD's artifacts are.
 
 So the question is never "will it fit?" It's "what is the *minimum* the model needs in
 front of it to do this turn well — and what must be written down so the next session can
@@ -58,7 +57,7 @@ LCD turns that one sentence into a working method with two moving parts:
 - **Adaptive lanes.** A single front door (`/lcd:triage`) scores incoming work and
   routes it to one of three lanes — **Quick** (no artifacts), **Standard** (one resumable
   journal), or **Deep** (the full pipeline). Process weight is proportional to risk, not
-  fixed. Most work is Quick. The heavy pipeline is one lane you *earn*, not the default.
+  fixed. The heavy pipeline is one lane you *earn*, not the default.
 
 - **A durable spine.** A small set of on-disk artifacts (`MAP.md`, `DECISIONS.md`, a
   per-work-item `JOURNAL.md`) hold just enough state that a context reset is cheap — a cold
@@ -111,7 +110,7 @@ Three artifacts make a reset survivable:
 - **`work/<slug>/JOURNAL.md`** — the per-work-item resume anchor. Its fenced
   `lcd-resume:v1` block (NOW · STEPS · DECISIONS · OPEN QUESTIONS · EDIT BOUNDARY) is the
   *entire* cold-start payload. `/lcd:resume <slug>` rebuilds context from MAP + that
-  block + decision headers in under ~2k tokens — not by re-reading the feature.
+  block + decision headers (target under ~2k tokens) — not by re-reading the feature.
 
 An optional fourth artifact, **`SPEC.md`** (`living-spec: on`), is a living current-state index
 of what the system *does* now — the behavioural counterpart to MAP's structure — folded from

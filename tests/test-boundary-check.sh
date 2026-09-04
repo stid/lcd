@@ -31,6 +31,8 @@ cat > "$proj/docs/lcd/work/export-csv/JOURNAL.md" <<'EOF'
 - `tests/export.test.ts`
 - `docs/notes.md`, `README.md`
 - `LICENSE` (kept for reference)
+- `docs/a.md` · `docs/b.md` · `CHANGELOG.md`
+- `docs/c.md`; `docs/d.md`
 - `{src,lib}/shared/**`
 <!-- /lcd-resume -->
 EOF
@@ -56,6 +58,13 @@ out="$(run_hook "$proj/docs/notes.md")"
 [[ -z "$out" ]] || fail "first path of a comma-separated bullet should be allowed, got: $out"
 out="$(run_hook "$proj/README.md")"
 [[ -z "$out" ]] || fail "second path of a comma-separated bullet should be allowed, got: $out"
+
+# --- `·` and `;` separated bullets are split like commas (stid/lcd#17) ---------
+# Authors write `- \`a.md\` · \`b.md\`` too; matched whole, every path it lists is denied.
+for f in docs/a.md docs/b.md CHANGELOG.md docs/c.md docs/d.md; do
+  out="$(run_hook "$proj/$f")"
+  [[ -z "$out" ]] || fail "path $f of a ·/;-separated bullet should be allowed, got: $out"
+done
 
 # --- a trailing (annotation) doesn't break the path --------------------------
 out="$(run_hook "$proj/LICENSE")"

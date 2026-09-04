@@ -6,6 +6,31 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.18.1] — 2026-09-04
+
+Zero-weight release from the first Fable 5.1 review of the methodology (three-analyst council,
+harness D-027): one hook fix and a batch of doc claims brought back in line with their sources.
+
+### Fixed
+- **Boundary hook splits `·`- and `;`-separated EDIT BOUNDARY bullets** (`bin/lcd-hooklib.sh`),
+  the same class as the v0.15.1 comma fix — a bullet like `` `a.md` · `b.md` `` was matched as
+  one literal path and silently denied every file it listed. Fixture case added (#17).
+
+### Changed (docs only)
+- Dropped "most work is Quick" (triage SKILL, `docs/why-lcd.md`): the dogfood log reads
+  3 Quick / 12 Standard / 3 Deep and trivial work skips triage by design, so the claim was
+  neither measured nor measurable. The lanes stand on resumability.
+- Dropped "denser tokenizer on newer model tiers" (README, `rules/lcd.md`, `docs/why-lcd.md`):
+  the +30% tokenizer arrived with 4.7 and is shared by Fable 5 and 5.1 — not a tier property.
+- "~2k tokens to resume" is now stated as a target, not a result (README, `rules/lcd.md`, triage
+  SKILL, `docs/why-lcd.md`); it has not been measured.
+- The edit-boundary hook's guarantee is scoped honestly (README, `rules/lcd.md`): it sees
+  `Edit`/`Write`-family calls only; Bash-tool edits pass it. Deliberately not extended to `Bash`
+  (shell parsing either misses cases or over-denies and breaks fail-open).
+- README "Self-measuring" now publishes the measured numbers with their caveats: Deep ~4.4× and
+  Standard ~2.1× a bare agent at near-parity single-shot quality (n=3, one fixture,
+  `claude-fable-5`); the cross-session half is the open measurement (#16).
+
 ## [0.18.0] — 2026-08-30
 
 The lean-loop release: a three-reviewer over-engineering audit of the methodology (run from

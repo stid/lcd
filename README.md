@@ -15,9 +15,8 @@ The thesis behind that routing is context economy: treat what's in front of the 
 spend, not a window to fill. A 1M-token window doesn't retire that — cost, prompt-cache TTL,
 attention over long context, and cross-session resumability all still bite (no window survives
 `/clear` or a new session; only durable artifacts on disk do), so process weight adapts to the work
-and a durable spine makes a reset cheap. A denser tokenizer on newer model tiers raises the per-token
-cost of every wasted token, and those models do better given a durable place to write learnings and
-a task spec up front — which is what LCD's artifacts are. See [`docs/why-lcd.md`](docs/why-lcd.md)
+and a durable spine makes a reset cheap. Current models do better given a durable place to write
+learnings and a task spec up front — which is what LCD's artifacts are. See [`docs/why-lcd.md`](docs/why-lcd.md)
 for the full argument.
 
 > **Why LCD?** Full spec-driven pipelines are excellent but too heavy for most changes. LCD keeps
@@ -48,7 +47,7 @@ buys the heavy pipeline.
 - **`MAP.md`** — project guardrails (zones, surfaces, invariants); read first on a cold start.
 - **`DECISIONS.md`** — append-only decision log (broader than ADR).
 - **`work/<slug>/JOURNAL.md`** — per-work-item resume anchor; the fenced `lcd-resume:v1` block is the
-  entire cold-start payload, so `/lcd:resume <slug>` rebuilds context in ~2k tokens.
+  entire cold-start payload, so `/lcd:resume <slug>` rebuilds context from a small anchor (target ~2k tokens).
 - **`SPEC.md`** — opt-in fourth artifact (off by default): a living current-state index of what the
   system does now, the behavioural counterpart to MAP's structure. Closed work-items fold into it at
   closeout, so current behaviour isn't something you reconstruct by replaying the work-item chain.
@@ -88,7 +87,9 @@ Where the harness offers a primitive, LCD uses it instead of prose (all hooks **
 they can never break an un-onboarded project):
 
 - **Edit boundary (PreToolUse hook)** — while a work-item is active on the current branch, edits
-  outside its declared EDIT BOUNDARY are denied at the tool layer, with the fix named.
+  outside its declared EDIT BOUNDARY are denied at the tool layer, with the fix named. Scope: it
+  sees `Edit`/`Write` tool calls only — a file changed through the `Bash` tool (sed, heredocs)
+  passes it, so on a Bash-first session the boundary is a nudge, not a wall.
 - **Cold start (SessionStart hook)** — ~10 lines injected per session: artifact root, MAP, active
   work-items with next actions. Resume happens even if nobody asks for it.
 - **Anchor freshness (Stop hook)** — finishing with a stale JOURNAL is blocked once, so the next
@@ -107,7 +108,11 @@ LCD's skills are prompts, so their quality is model-behavioral — measured, not
 plugin ships its own benchmark: [`evals/run-eval.sh`](evals/run-eval.sh) drives a full non-interactive
 Deep-lane run against a frozen fixture and a chosen plugin variant, and a golden-locked grader
 emits one comparable result row per run (audit outcome, suite state, build-loop commits, token
-cost; rows compare only within one model id). Prompt changes ship with an eval row as evidence,
+cost; rows compare only within one model id). Measured so far (`evals/results.md`, n=3 per arm,
+one fixture, `claude-fable-5`): the Deep pipeline costs ~4.4× a bare agent and the median
+Standard lane ~2.1×, at near-parity single-shot quality — process weight buys resumability,
+not single-shot quality, and the cross-session half is the open measurement (longitudinal eval
+planned). Prompt changes ship with an eval row as evidence,
 and A/B arms have decided real design questions — step enumeration was dropped from three phase
 commands and kept in `test-gen` on measured cost and quality, not taste. A 2026 survey of
 spec-driven frameworks (arXiv 2606.04967) names the absence of process benchmarks as a
