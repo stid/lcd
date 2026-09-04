@@ -136,3 +136,75 @@ is parked in the harness ROADMAP.
 (not 4.4×) at the same near-parity quality, and 3/3 runs produced the durable spine
 (JOURNAL, closeout telemetry) whose value T1b prices. The keep/slim/pivot decision now has
 the median lane's number.
+2026-09-04 · none-51 · t151-none-1 · audit: n/a (n/a non-OK) · suite: green · commits: 4 (redgreen: 0) · tokens: 598345 · cost: $1.49 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · none-51 · t151-none-2 · audit: n/a (n/a non-OK) · suite: green · commits: 4 (redgreen: 0) · tokens: 514855 · cost: $1.43 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · standard-51 · t151-standard-1 · audit: INCOMPLETE (n/a non-OK) · suite: green · commits: 6 (redgreen: 0) · tokens: 1254448 · cost: $3.15 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · none-51 · t151-none-3 · audit: n/a (n/a non-OK) · suite: green · commits: 3 (redgreen: 0) · tokens: 495900 · cost: $1.32 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · deep-51 · t151-deep-1 · audit: PASS (0 non-OK) · suite: green · commits: 14 (redgreen: 6) · tokens: 3064562 · cost: $5.63 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · standard-51 · t151-standard-2 · audit: INCOMPLETE (n/a non-OK) · suite: green · commits: 7 (redgreen: 0) · tokens: 1177874 · cost: $3.68 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · standard-51 · t151-standard-3 · audit: INCOMPLETE (n/a non-OK) · suite: green · commits: 6 (redgreen: 0) · tokens: 1189916 · cost: $3.15 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · deep-51 · t151-deep-2 · audit: PASS (0 non-OK) · suite: green · commits: 13 (redgreen: 4) · tokens: 4081585 · cost: $6.43 · interventions: n/a · model: claude-fable-5-1
+2026-09-04 · deep-51 · t151-deep-3 · audit: PASS (0 non-OK) · suite: green · commits: 10 (redgreen: 3) · tokens: 2905503 · cost: $5.84 · interventions: n/a · model: claude-fable-5-1
+
+## T1-5.1 campaign conclusion (2026-09-04) — three arms re-baselined on claude-fable-5-1
+
+Context: the first Fable 5.1 review (harness D-027) found every row above stamped
+`claude-fable-5` while sessions had moved to 5.1 — under D-015 the 2.1×/4.4×/parity numbers
+described a tier nobody was running. This campaign re-measured all three arms on 5.1, with two
+protocol changes: the fixture enables `closeout-evaluator: on` (so the opt-in evaluator's cost
+lands in the plugin rows instead of being priced at zero), and quality is scored by the
+persisted rubric (`evals/rubric.md`) into a scoring file — `evals/quality/2026-09-04-fable51-t151.md`;
+the same rubric was applied retroactively to the verified fable-5 workspaces in
+`evals/quality/2026-09-04-fable5-verified.md`, which supersedes the transcript-only quality
+totals quoted in the two conclusions above. Plugin under test: 0.19.0 (= 0.18.1 + fixture key).
+Arms ran in parallel (one process per arm, three sequential runs each), settings-only isolation
+via the D-025 wrapper. n=3 per arm, one fixture, one task, one model.
+
+**Cost / tokens / time (means, ranges):**
+
+| arm | tokens | cost | wall-clock | vs bare (cost / tokens) |
+|---|---|---|---|---|
+| bare (`none-51`) | 0.54M (0.50–0.60) | $1.41 ($1.32–$1.49) | 2.3 min | 1× |
+| Standard, triage-routed, evaluator ON (`standard-51`) | 1.21M (1.18–1.25) | $3.33 ($3.15–$3.68) | 6.2 min | **2.4× / 2.3×** |
+| Deep, evaluator ON (`deep-51`) | 3.35M (2.91–4.08) | $5.97 ($5.63–$6.43) | 11.4 min | **4.2× / 6.2×** |
+
+No range overlap between arms. Against the fable-5 rows: absolute costs fell in every arm (bare
+$2.01→$1.41, Standard $4.18→$3.33, Deep $8.88→$5.97 — 5.1 prices cache reads lower and every
+Deep run finished in ONE leg where fable-5 needed several), while the ratios held (Standard
+2.1×→2.4× now *including* the evaluator dispatch; Deep 4.4×→4.2×). The per-token bloat argument
+is weaker on 5.1; the ratio structure is unchanged.
+
+**Routing:** 3/3 triage-routed runs → Standard (4–5 signals, hard:no, risk:no), all completing
+the Standard contract unprompted (JOURNAL, TDD, test-presence audit, closeout line). 3/3 Deep
+runs: audit PASS, one leg each, 1 subagent (the evaluator).
+
+**Quality (rubric v1, two lenses × 3 judges per arm, `/25` per workspace):** Deep 24.0 ·
+Standard 24.0 · bare 23.7 (campaign /75: 72 / 72 / 71). On the same rubric the verified fable-5
+workspaces score Deep 22.7 · Standard 23.2 · bare 22.5 (68 / 70 / 68). **Parity across arms holds
+on both tiers** — process weight still buys no measurable single-shot quality — and the whole
+band moved up ~1.3 points on 5.1. Mutation matrix: 5.1 suites caught 34/36 injected defects
+(the two survivors are both "checksum ignores the FIRST record", Deep-3 and Standard-3);
+fable-5 suites caught 31/36 (5 checksum survivors + 1 frozen-timestamp). The checksum defect is
+the fixture task's blind spot at any tier.
+
+**Evaluator (first campaign with it priced and on):** dispatched 6/6 plugin runs; `stands` 3,
+`challenged` 3 — Standard-2 (1 finding: no test asserted `lastUpdated` advances on a second add;
+a first-write-only stub passed 30/30), Deep-2 (4 findings: count-only checksum mutant passed
+28/28; HTTP `GET /stats?` and `/stats?&` answered 200 while the CLI refused the empty arg —
+a real cross-surface parity defect; audit CLI cell hit the USAGE string, not the handler;
+boundary under-declared), Deep-3 (4 findings, incl. the same `/stats?` parity defect and
+degenerate timestamp brackets). Every finding was fixed and re-audited before closeout; the
+closeout lines record them as `interventions: 1`. Two of six closeouts shipped a code defect
+the green suite did not see — the maker≠checker failure mode D-022 named, observed on the
+current tier. Cost of the dispatch is inside the rows above (Standard 2.1×→2.4× is the upper
+bound of its price, confounded with the lean-loop cuts that pulled the other way).
+
+**What this does NOT show:** single-shot only; cold-pickup, multi-session drift and decision
+durability remain unmeasured (→ T1b). Whether native `/code-review` would have produced the
+same evaluator findings is untested. One fixture whose task cannot separate the arms on
+quality; T1b needs a non-toy fixture.
+
+**Honest verdict:** on the current tier the median lane costs ~2.4× bare with an independent
+checker that caught real defects in half its runs; the Deep pipeline costs ~4.2× and buys no
+single-shot quality over either. LCD's single-shot case is the evaluator, not the process
+weight; its multi-session case is still the open measurement.

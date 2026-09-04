@@ -6,6 +6,27 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.19.0] — 2026-09-04
+
+T1-5.1: the benchmark re-baselined on the current model tier, with quality as an artifact.
+
+### Added
+- **`evals/rubric.md`** — the five-dimension, two-lens (inspection + mutation) quality rubric as
+  a persisted artifact, and **`evals/quality/`** scoring files: one for the T1-5.1 campaign
+  (`claude-fable-5-1`) and one applied retroactively to the verified `claude-fable-5`
+  workspaces. Quality claims now point at a file, not a transcript.
+- **T1-5.1 campaign conclusion** in `evals/results.md`: bare $1.41 / Standard $3.33 (2.4×,
+  evaluator on) / Deep $5.97 (4.2×) on 5.1; quality parity across arms on both tiers (72/72/71
+  vs 68/70/68 of 75); the closeout evaluator challenged 3 of 6 plugin closeouts, twice on a
+  real cross-surface parity defect.
+
+### Changed
+- **Eval fixture enables `closeout-evaluator: on`**, so the opt-in evaluator's cost lands in the
+  plugin rows instead of being priced at zero (test asserts the key).
+- **`run-eval.sh` default model is `claude-fable-5-1`**; rows before 2026-09-04 ran
+  `claude-fable-5` and stay comparable only among themselves (D-015). Dry-run test pins the default.
+- README "Self-measuring" quotes the 5.1 numbers.
+
 ## [0.18.1] — 2026-09-04
 
 Zero-weight release from the first Fable 5.1 review of the methodology (three-analyst council,
