@@ -13,7 +13,7 @@ ver="$(jq -r .version "$repo/.claude-plugin/plugin.json")"
 make_source() {
   mkdir -p "$1"
   cp -R "$repo/bin" "$repo/skills" "$repo/commands" "$repo/agents" "$repo/rules" \
-    "$repo/templates" "$repo/hooks" "$repo/.claude-plugin" "$repo/CHANGELOG.md" "$1/"
+    "$repo/templates" "$repo/hooks" "$repo/docs" "$repo/.claude-plugin" "$repo/CHANGELOG.md" "$1/"
 }
 
 # make_project <dir> — an onboarded project with its own settings, pointer and conventions
@@ -22,7 +22,8 @@ make_project() {
   printf 'artifact-root: docs/lcd\n' > "$1/.claude/rules/lcd-conventions.md"
   cat > "$1/.claude/settings.json" <<'EOF'
 {"model": "keep-me", "permissions": {"allow": ["Bash(npm test)"]},
- "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "echo mine"}]}]}}
+ "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "echo mine"},
+   {"type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/lcd/bin/old.sh"}]}]}}
 EOF
   cat > "$1/CLAUDE.md" <<'EOF'
 # Project
@@ -33,6 +34,7 @@ Non-trivial new work → invoke
 `lcd:triage`, which picks a lane.
 Resume any work-item after a context reset: `/lcd:resume <slug>`.
 EOF
+  printf 'Agents: `lcd:triage` then `/lcd:resume <slug>`.\n' > "$1/AGENTS.md"
 }
 
 # snapshot <dir> — hash of every file under it (detects any write)
@@ -40,7 +42,8 @@ snapshot() {
   (cd "$1" && find . -type f -print0 | sort -z | xargs -0 shasum -a 256 | shasum -a 256)
 }
 
-vendor() { bash "$src/bin/lcd-vendor.sh" "$@"; }
+# /bin/bash: macOS ships 3.2 there — the oldest bash the shebang can land on
+vendor() { /bin/bash "$src/bin/lcd-vendor.sh" "$@"; }
 
 src="$tmp/src"; make_source "$src"
 proj="$tmp/proj"; make_project "$proj"
@@ -67,8 +70,11 @@ done
 assert_contains "$(cat "$proj/.claude/skills/lcd-triage/SKILL.md")" "name: lcd-triage" "AC-1 (CLI) skill renamed"
 left="$(grep -rl 'CLAUDE_PLUGIN_ROOT' "$proj/.claude" || true)"
 [[ -z "$left" ]] || fail "AC-1 (CLI): CLAUDE_PLUGIN_ROOT left in: $left"
-left="$(grep -rlE '(^|[^A-Za-z0-9_-])/?lcd:[a-z]' "$proj/.claude" || true)"
+left="$(grep -rlE '(^|[^A-Za-z0-9_-])/?lcd:[a-z*]' "$proj/.claude" || true)"
 [[ -z "$left" ]] || fail "AC-1 (CLI): plugin-namespaced lcd: refs left in: $left"
+missing="$(cd "$proj" && grep -rhoE '\.claude/(lcd|skills|commands|agents)/[A-Za-z0-9._/-]*[A-Za-z0-9]\.(md|sh|yml|js)' .claude \
+  | sort -u | while read -r r; do [[ -e "$r" ]] || echo "$r"; done)"
+[[ -z "$missing" ]] || fail "AC-1 (CLI): vendored files reference missing paths: $missing"
 assert_contains "$(cat "$proj/.claude/commands/lcd-audit.md")" ".claude/lcd/bin/audit-crosspath.sh" \
   "AC-1 (CLI) bare script names become vendored paths"
 cmds="$(jq -r '.hooks[][].hooks[].command' "$proj/.claude/settings.json" | grep 'lcd/bin')"
@@ -89,6 +95,12 @@ md="$(cat "$proj/CLAUDE.md")"
 assert_contains "$md" '`lcd-triage`' "AC-2 (CLI) pointer triage token rewritten"
 assert_contains "$md" '`/lcd-resume <slug>`' "AC-2 (CLI) pointer resume token rewritten"
 assert_contains "$md" "Own text that mentions nothing." "AC-2 (CLI) own CLAUDE.md text kept"
+assert_contains "$(cat "$proj/AGENTS.md")" '`lcd-triage` then `/lcd-resume <slug>`' "AC-2 (CLI) AGENTS.md pointer rewritten"
+jq -e '[.hooks.Stop[].hooks[].command] | index("echo mine")' "$s" >/dev/null \
+  || fail "AC-2 (CLI): user hook sharing a group with a stale LCD hook lost"
+jq -e '[.hooks[][].hooks[].command | select(contains("old.sh"))] | length == 0' "$s" >/dev/null \
+  || fail "AC-2 (CLI): stale LCD hook kept"
+assert_not_contains "$(cat "$proj/.claude/lcd/MANIFEST")" " .claude/rules/ac-convention.md" "AC-2 (CLI) ac-convention is a project-owned seed"
 [[ -f "$proj/.claude/rules/ac-convention.md" ]] || fail "AC-2 (CLI): ac-convention rule not installed"
 [[ "$(shasum -a 256 < "$proj/.claude/rules/lcd-conventions.md")" == "$conv_before" ]] \
   || fail "AC-2 (CLI): lcd-conventions.md was modified"
@@ -101,8 +113,10 @@ assert_contains "$out" "already vendored" "AC-2 (CLI) second install message"
 p2="$tmp/p2"; make_project "$p2"
 mkdir -p "$p2/.claude/skills/lcd-triage"; echo mine > "$p2/.claude/skills/lcd-triage/SKILL.md"
 printf -- '---\npaths: ["x/**"]\n---\nmine\n' > "$p2/.claude/rules/ac-convention.md"
+before="$(snapshot "$p2")"
 out="$(vendor install "$p2" 2>&1)"; code=$?
 [[ $code -ne 0 ]] || fail "AC-2 (CLI): install over an unmanaged lcd-triage should refuse"
+[[ "$(snapshot "$p2")" == "$before" ]] || fail "AC-2 (CLI): refused unmanaged install wrote files"
 assert_contains "$out" "skills/lcd-triage" "AC-2 (CLI) conflict named"
 [[ ! -e "$p2/.claude/lcd" ]] || fail "AC-2 (CLI): refused install created .claude/lcd"
 rm -rf "$p2/.claude/skills"
@@ -117,10 +131,11 @@ vendor update "$proj" >/dev/null 2>&1; assert_exit 0 $? "AC-3 (CLI) no-op update
 src2="$tmp/src2"; make_source "$src2"
 echo "UPSTREAM-CHANGE-MARKER" >> "$src2/skills/triage/SKILL.md"
 rm "$src2/commands/tidy.md"
+rm -r "$src2/skills/reconcile"
 printf -- '---\ndescription: new\n---\nnew command\n' > "$src2/commands/newcmd.md"
 jq '.version = "9.9.9"' "$src2/.claude-plugin/plugin.json" > "$tmp/pj" && cat "$tmp/pj" > "$src2/.claude-plugin/plugin.json"
 { printf '# Changelog\n\n## [9.9.9] — test\n\n- CHANGELOG-BETWEEN-MARKER\n\n'; tail -n +2 "$repo/CHANGELOG.md"; } > "$src2/CHANGELOG.md"
-vendor2() { bash "$src2/bin/lcd-vendor.sh" "$@"; }
+vendor2() { /bin/bash "$src2/bin/lcd-vendor.sh" "$@"; }
 
 cp -R "$proj" "$tmp/proj-dry"
 # --- AC-5 (CLI): dry-run reports the plan and writes nothing -----------------
@@ -141,6 +156,7 @@ assert_exit 0 "$code" "AC-3 (CLI) update to newer source succeeds"
 assert_contains "$(cat "$proj/.claude/skills/lcd-triage/SKILL.md")" "UPSTREAM-CHANGE-MARKER" "AC-3 (CLI) changed file replaced"
 [[ ! -e "$proj/.claude/commands/lcd-tidy.md" ]] || fail "AC-3 (CLI): upstream-removed file kept"
 [[ -f "$proj/.claude/commands/lcd-newcmd.md" ]] || fail "AC-3 (CLI): upstream-added file missing"
+[[ ! -e "$proj/.claude/skills/lcd-reconcile" ]] || fail "AC-3 (CLI): upstream-removed skill dir left behind"
 assert_contains "$(cat "$proj/.claude/lcd/VERSION")" "version: 9.9.9" "AC-3 (CLI) VERSION rewritten"
 assert_not_contains "$(cat "$proj/.claude/lcd/MANIFEST")" "lcd-tidy.md" "AC-3 (CLI) MANIFEST drops removed file"
 n="$(jq '[.hooks[][].hooks[].command | select(contains("lcd-session-context"))] | length' "$proj/.claude/settings.json")"
@@ -158,6 +174,9 @@ assert_contains "$out" ".claude/commands/lcd-audit.md" "AC-4 (CLI) deleted file 
 [[ "$(snapshot "$pm")" == "$before" ]] || fail "AC-4 (CLI): refused update wrote files"
 vendor2 update --force "$pm" >/dev/null 2>&1; assert_exit 0 $? "AC-4 (CLI) --force applies"
 assert_contains "$(cat "$pm/.claude/lcd/VERSION")" "version: 9.9.9" "AC-4 (CLI) forced update rewrote VERSION"
+[[ -f "$pm/.claude/commands/lcd-audit.md" ]] || fail "AC-4 (CLI): --force did not restore a locally deleted file"
+assert_not_contains "$(cat "$pm/.claude/skills/lcd-triage/SKILL.md")" "LOCAL-EDIT" "AC-4 (CLI) --force overwrote the local edit"
+vendor2 check "$pm" >/dev/null 2>&1; assert_exit 0 $? "AC-4 (CLI) forced copy checks clean"
 
 # --- AC-6 (CLI): check reports version and drift ------------------------------
 out="$(vendor2 check "$proj" 2>&1)"; code=$?
@@ -170,6 +189,21 @@ out="$(vendor2 check "$proj" 2>&1)"; code=$?
 assert_exit 1 "$code" "AC-6 (CLI) check with drift"
 assert_contains "$out" ".claude/agents/lcd-evaluator.md" "AC-6 (CLI) drifted file listed"
 vendor2 check "$tmp/nope" >/dev/null 2>&1; [[ $? -ne 0 ]] || fail "AC-6 (CLI): check on non-vendored project should fail"
+
+# --- AC-3 (CLI): a user hook added to the LCD group survives an update -----------------
+p6="$tmp/p6"; make_project "$p6"; vendor install "$p6" >/dev/null 2>&1 || fail "p6 install"
+jq '.hooks.PreToolUse[0].hooks += [{"type": "command", "command": "my-lint.sh"}]' "$p6/.claude/settings.json" > "$tmp/s6" \
+  && cat "$tmp/s6" > "$p6/.claude/settings.json"
+vendor update "$p6" >/dev/null 2>&1; assert_exit 0 $? "AC-3 (CLI) update with a user hook in the LCD group"
+jq -e '[.hooks.PreToolUse[].hooks[].command] | index("my-lint.sh")' "$p6/.claude/settings.json" >/dev/null \
+  || fail "AC-3 (CLI): user hook inside the LCD group was deleted"
+n="$(jq '[.hooks[][].hooks[].command | select(contains("lcd-boundary-check"))] | length' "$p6/.claude/settings.json")"
+[[ "$n" -eq 1 ]] || fail "AC-3 (CLI): boundary hook count $n after update"
+
+# --- AC-4 (CLI): onboard rewriting ac-convention (non-default root) never blocks update --
+printf -- '---\npaths: ["specs/**"]\n---\nonboarded\n' > "$p6/.claude/rules/ac-convention.md"
+vendor2 update "$p6" >/dev/null 2>&1; assert_exit 0 $? "AC-4 (CLI) update after onboard rewrote ac-convention"
+assert_contains "$(cat "$p6/.claude/rules/ac-convention.md")" "specs/**" "AC-4 (CLI) onboarded ac-convention kept"
 
 # --- AC-4 (CLI): a crafted MANIFEST or symlink can't reach outside the project ---------
 p3="$tmp/p3"; make_project "$p3"; vendor install "$p3" >/dev/null 2>&1 || fail "p3 install"

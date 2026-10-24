@@ -117,6 +117,7 @@ for f in "$src"/bin/*; do
   [[ "$(basename "$f")" == "lcd-vendor.sh" ]] || put "$f" ".claude/lcd/bin/$(basename "$f")"
 done
 for f in "$src"/rules/*.md; do put "$f" ".claude/lcd/rules/$(basename "$f")"; done
+for f in "$src"/docs/*.md; do put "$f" ".claude/lcd/docs/$(basename "$f")"; done
 (cd "$src/templates" && find . -type f ! -path './vendor/*') | while read -r f; do
   put "$src/templates/$f" ".claude/lcd/templates/${f#./}"
 done
@@ -127,10 +128,6 @@ done
 for f in "$src"/commands/*.md; do put "$f" ".claude/commands/lcd-$(basename "$f")"; done
 put "$src/templates/vendor/lcd-update.md" ".claude/commands/lcd-update.md"
 for f in "$src"/agents/*.md; do put "$f" ".claude/agents/$(basename "$f")"; done
-# The AC rule only belongs to us if we wrote it; a project's own copy (onboard writes one for
-# a non-default artifact root) stays project-owned.
-acr=".claude/rules/ac-convention.md"
-if [[ ! -e "$proj/$acr" || -n "$(manifest_hash "$acr")" ]]; then put "$src/rules/ac-convention.md" "$acr"; fi
 
 # Rewrite plugin references into project ones. Order matters: specific plugin-root paths
 # first, then the namespace, then bare script names (which the plugin puts on PATH).
@@ -147,8 +144,8 @@ scripts='parse-acs|audit-crosspath|lcd-doctor|lcd-triage-log|lcd-boundary-check|
     -e 's#"?\$\{CLAUDE_PLUGIN_ROOT\}"?/#.claude/lcd/#g' \
     -e 's#\$\{CLAUDE_PLUGIN_ROOT\}#.claude/lcd#g' \
     -e 's#lcd:lcd-#lcd-#g' \
-    -e 's#(^|[^A-Za-z0-9_-])(/?)lcd:([a-z])#\1\2lcd-\3#g' \
-    "${extra[@]}" "$f" > "$f.tmp"
+    -e 's#(^|[^A-Za-z0-9_-])(/?)lcd:([a-z*])#\1\2lcd-\3#g' \
+    ${extra[@]+"${extra[@]}"} "$f" > "$f.tmp"
   cat "$f.tmp" > "$f" && rm -f "$f.tmp"
 done
 for f in "$stage"/.claude/skills/lcd-*/SKILL.md; do
@@ -228,14 +225,22 @@ mkdir -p "$lcd"
 cp "$new_manifest" "$lcd/MANIFEST"
 printf 'version: %s\ncommit: %s\nsource: github.com/stid/lcd\n' "$new_ver" "$new_commit" > "$lcd/VERSION"
 
-# Hooks + permissions: drop any previous LCD entries, then add the source's — idempotent.
+# The AC rule is a seed, not managed: onboard rewrites its `paths:` for a non-default artifact
+# root, and that copy must survive every update. Written only when the project has none.
+acr=".claude/rules/ac-convention.md"
+assert_inside "$acr"
+[[ -e "$proj/$acr" ]] || { mkdir -p "$proj/.claude/rules"; cp "$stage/.claude/lcd/rules/ac-convention.md" "$proj/$acr"; }
+
+# Hooks + permissions: drop previous LCD hook ENTRIES (a user hook sharing their group stays),
+# drop groups and events left empty, then add the source's — idempotent.
 hooks="$(jq '(.. | .command? | strings) |= sub("\\$\\{CLAUDE_PLUGIN_ROOT\\}\"/bin/"; "$CLAUDE_PROJECT_DIR\"/.claude/lcd/bin/")' \
   "$src/hooks/hooks.json")"
 perms='["Bash(.claude/lcd/bin/audit-crosspath.sh:*)","Bash(.claude/lcd/bin/parse-acs.sh:*)","Bash(.claude/lcd/bin/lcd-doctor.sh:*)","Bash(.claude/lcd/bin/lcd-triage-log.sh:*)"]'
 [[ -f "$settings" ]] || echo '{}' > "$settings"
 jq --argjson new "$hooks" --argjson perms "$perms" '
-  .hooks = ((.hooks // {}) | with_entries(.value |= map(select(
-              any(.hooks[]?; (.command // "") | contains(".claude/lcd/bin/")) | not)))
+  .hooks = ((.hooks // {})
+            | with_entries(.value |= (map(.hooks |= map(select((.command // "") | contains(".claude/lcd/bin/") | not)))
+                                      | map(select(.hooks | length > 0))))
             | with_entries(select(.value | length > 0)))
   | reduce ($new.hooks | to_entries[]) as $e (.; .hooks[$e.key] = ((.hooks[$e.key] // []) + $e.value))
   | .permissions.allow = (((.permissions.allow // []) | map(select(startswith("Bash(.claude/lcd/bin/") | not))) + $perms)
