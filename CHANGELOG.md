@@ -6,6 +6,26 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.20.0] — 2026-10-24
+
+Vendoring: LCD frozen into a project, so contributors get it by cloning, no plugin install.
+
+### Added
+- **`bin/lcd-vendor.sh install|update|check`** writes LCD into a project's own `.claude/`:
+  skills, commands and agents as `lcd-<name>`, the engine (scripts, rules, templates) under
+  `.claude/lcd/`, hooks and path-based permissions merged into `.claude/settings.json` (other
+  keys kept), the CLAUDE.md/AGENTS.md pointer tokens renamed. `.claude/lcd/VERSION` records
+  the source version and commit; `.claude/lcd/MANIFEST` the hash of every managed file.
+  `update` refuses when a managed file was edited or deleted locally unless `--force`;
+  `--dry-run` prints the plan and the CHANGELOG sections in between. Fixture test:
+  `tests/test-vendor.sh`.
+- **`/lcd-update`** (vendored copies only, `templates/vendor/lcd-update.md`): fetches the
+  target release (or uses a local clone), previews with `--dry-run`, asks, applies, runs doctor.
+
+### Notes
+- In a vendored copy `ac-convention` sits in `.claude/rules/`, so its `paths:` scope actually
+  auto-loads it. Plugins have no rules component, so under the plugin it is read on demand.
+
 ## [0.19.0] — 2026-09-04
 
 T1-5.1: the benchmark re-baselined on the current model tier, with quality as an artifact.

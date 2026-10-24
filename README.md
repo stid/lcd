@@ -81,6 +81,26 @@ Then, in any project:
 
 …and just start working — `lcd:triage` auto-routes new work to the right lane.
 
+### Vendoring: LCD inside the project, no plugin
+
+When a project's contributors should get LCD just by cloning it, with no plugin to install,
+freeze a copy into the project from a checkout:
+
+```
+/path/to/lcd/bin/lcd-vendor.sh install /path/to/project    # then commit .claude/
+```
+
+The copy lives in the project's own `.claude/`: skills, commands and agents renamed
+`lcd-<name>` (`/lcd-triage`, `/lcd-resume`, …: project skills can't use the `lcd:` namespace),
+the engine under `.claude/lcd/`, hooks merged into `.claude/settings.json`. Disable the plugin
+(or drop `--plugin-dir`) in that project, or the hooks fire twice.
+
+Update it with `/lcd-update [vX.Y.Z | path-to-clone]`. The command previews the from → to
+versions, the changed files and the CHANGELOG in between, then asks before applying. A
+`.claude/lcd/MANIFEST` of hashes protects local edits: an update that would overwrite an edited
+or deleted file stops and names it (`--force` to accept). `lcd-vendor.sh check <project>` reports
+version and drift without writing.
+
 ## Structural, not just instructed
 
 Where the harness offers a primitive, LCD uses it instead of prose (all hooks **fail open** —
