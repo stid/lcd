@@ -47,8 +47,23 @@ done
 die() { echo "error: $*" >&2; exit 1; }
 command -v jq >/dev/null 2>&1 || die "jq is required"
 [[ -d "$proj" ]] || die "$proj is not a directory"
-proj="$(cd "$proj" && pwd)"
+proj="$(cd "$proj" && pwd -P)"
 lcd="$proj/.claude/lcd"
+
+# assert_inside <relpath> — managed paths come from a MANIFEST anyone can commit to, so
+# each must stay under .claude/ (no `..`) and never pass through a symlink inside the project.
+assert_inside() {
+  local rel="$1" cur="$proj" part parts
+  [[ "$rel" =~ ^\.claude/[A-Za-z0-9._/-]+$ && "/$rel/" != *"/../"* ]] || die "unsafe managed path: $rel"
+  IFS=/ read -ra parts <<<"$rel"
+  for part in "${parts[@]}"; do
+    cur="$cur/$part"
+    [[ ! -L "$cur" ]] || die "refusing to follow symlink: ${cur#"$proj"/}"
+  done
+}
+if [[ -f "$lcd/MANIFEST" ]]; then
+  while read -r _ p; do assert_inside "$p"; done < "$lcd/MANIFEST"
+fi
 new_ver="$(jq -r .version "$src/.claude-plugin/plugin.json")"
 new_commit="$(git -C "$src" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 
@@ -89,6 +104,7 @@ if [[ "$mode" == "update" && ! -f "$lcd/MANIFEST" ]]; then
 fi
 
 settings="$proj/.claude/settings.json"
+for p in .claude/settings.json .claude/lcd/MANIFEST .claude/lcd/VERSION; do assert_inside "$p"; done
 if [[ -f "$settings" ]]; then jq -e . "$settings" >/dev/null 2>&1 || die "$settings is not valid JSON"; fi
 
 # --- render the full managed tree into a stage dir ---------------------------------------
@@ -148,6 +164,7 @@ trap 'rm -rf "$stage" "$new_manifest"' EXIT
 # --- plan: added / changed / removed, plus conflicts -------------------------------------
 added=() changed=() removed=() conflicts=()
 while read -r h p; do
+  assert_inside "$p"
   old="$(manifest_hash "$p")"
   if [[ -z "$old" ]]; then
     added+=("$p")
@@ -226,7 +243,7 @@ jq --argjson new "$hooks" --argjson perms "$perms" '
 cat "$settings.tmp" > "$settings" && rm -f "$settings.tmp"
 
 for md in "$proj/CLAUDE.md" "$proj/AGENTS.md"; do
-  [[ -f "$md" ]] && grep -qE '`lcd:triage`|`/lcd:resume' "$md" || continue
+  [[ -f "$md" && ! -L "$md" ]] && grep -qE '`lcd:triage`|`/lcd:resume' "$md" || continue
   sed -e 's#`lcd:triage`#`lcd-triage`#g' -e 's#`/lcd:resume#`/lcd-resume#g' "$md" > "$md.tmp"
   cat "$md.tmp" > "$md" && rm -f "$md.tmp"
 done

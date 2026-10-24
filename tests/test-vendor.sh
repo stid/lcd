@@ -171,4 +171,23 @@ assert_exit 1 "$code" "AC-6 (CLI) check with drift"
 assert_contains "$out" ".claude/agents/lcd-evaluator.md" "AC-6 (CLI) drifted file listed"
 vendor2 check "$tmp/nope" >/dev/null 2>&1; [[ $? -ne 0 ]] || fail "AC-6 (CLI): check on non-vendored project should fail"
 
+# --- AC-4 (CLI): a crafted MANIFEST or symlink can't reach outside the project ---------
+p3="$tmp/p3"; make_project "$p3"; vendor install "$p3" >/dev/null 2>&1 || fail "p3 install"
+echo keep > "$tmp/victim"
+h="$(shasum -a 256 < "$tmp/victim" | cut -d' ' -f1)"
+echo "$h ../victim" >> "$p3/.claude/lcd/MANIFEST"
+vendor2 update --force "$p3" >/dev/null 2>&1; [[ $? -ne 0 ]] || fail "AC-4 (CLI): traversal MANIFEST entry accepted"
+[[ -f "$tmp/victim" ]] || fail "AC-4 (CLI): file outside the project was deleted"
+
+p4="$tmp/p4"; make_project "$p4"
+echo '{"outside": true}' > "$tmp/global.json"
+rm "$p4/.claude/settings.json"; ln -s "$tmp/global.json" "$p4/.claude/settings.json"
+out="$(vendor install "$p4" 2>&1)"; [[ $? -ne 0 ]] || fail "AC-4 (CLI): symlinked settings.json accepted"
+assert_contains "$out" "symlink" "AC-4 (CLI) symlink refusal message"
+[[ "$(cat "$tmp/global.json")" == '{"outside": true}' ]] || fail "AC-4 (CLI): wrote through settings symlink"
+
+p5="$tmp/p5"; make_project "$p5"; mkdir -p "$tmp/elsewhere"; ln -s "$tmp/elsewhere" "$p5/.claude/skills"
+vendor install "$p5" >/dev/null 2>&1; [[ $? -ne 0 ]] || fail "AC-4 (CLI): symlinked .claude/skills accepted"
+[[ -z "$(ls -A "$tmp/elsewhere")" ]] || fail "AC-4 (CLI): wrote through a symlinked directory"
+
 echo "ok"
