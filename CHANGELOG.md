@@ -18,7 +18,8 @@ cite them for traceability.
   `.claude/rules/ac-convention.md`. If a copy exists whose `paths:` doesn't cover the artifact
   root, onboard rewrites that one line. Doctor checks the copy at every root: WARN on the
   default root (projects onboarded earlier: re-run `/lcd:onboard`), FAIL on a custom root as
-  before, with the root matched literally. Docs no longer claim the plugin copy auto-loads.
+  before. Coverage is judged on the `paths:` globs (`"<root>/**"`), so root `docs` no longer
+  passes on the stock `docs/lcd` globs. Docs no longer claim the plugin copy auto-loads.
 - **Boundary-hook tests:** the fixture's branch switch-back failed silently in a repo with no
   commits, so every later case ran with no active work-item and passed without testing anything.
 

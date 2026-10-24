@@ -133,6 +133,10 @@ out="$(run_hook "$proj/../elsewhere/c.ts")"
 [[ -z "$out" ]] || fail "AC-2 (CLI): a path resolving outside the project is not ours, got: $out"
 out="$(run_hook "$proj/src/export/a\\n/../../../docs/x.md")"
 assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) a newline in the path can't truncate resolution"
+# a `*` segment must stay literal: from a cwd holding `export`, an unguarded split globs it
+mkdir -p "$tmp/cwd/export"
+out="$(cd "$tmp/cwd" && run_hook "$proj/src/*/a.ts")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) glob characters in a path segment are not expanded"
 out="$(run_hook "$proj/docs/lcd/../../src/other/d.ts")"
 assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) .. out of the always-allowed artifact root denied"
 

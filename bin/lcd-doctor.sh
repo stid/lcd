@@ -96,8 +96,10 @@ if [[ -n "$root" ]] && ! is_placeholder "$root"; then
   # B1 invariant: the AC rule auto-loads only from a project copy — plugins have no rules/
   # component. FAIL on a non-default root (as before); WARN on the default root, so projects
   # onboarded before onboard wrote the copy don't start failing the gate.
+  # Coverage is judged on the paths: globs alone — a bare substring would let root `docs`
+  # pass on the stock `"docs/lcd/**…"` globs, which never match docs/work/<slug>/spec.md.
   acf="$proj/.claude/rules/ac-convention.md"
-  if [[ -f "$acf" ]] && grep -qF "$root" "$acf"; then
+  if [[ -f "$acf" ]] && grep -m1 '^paths:' "$acf" | grep -qF "\"$root/**"; then
     ok "ac-convention: project copy covers $root"
   elif [[ "$root" != "docs/lcd" ]]; then
     fail "ac-convention: artifact-root is '$root' but no project override at .claude/rules/ac-convention.md covers it — the AC rule will never auto-load (re-run /lcd:onboard)"

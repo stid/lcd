@@ -85,6 +85,18 @@ write_conventions docs/lcd
 out="$(run_doctor)"; code=$?
 assert_exit 0 "$code" "AC-3 (CLI) wrong-root copy at default root does not fail"
 assert_contains "$out" "WARN — ac-convention" "AC-3 (CLI) wrong-root copy at default root warns"
+
+# --- AC-3 (CLI): coverage is judged on the paths: globs, not a substring anywhere ---------
+# root `docs` is a substring of the stock docs/lcd globs (and `spec` of the body), but
+# `docs/lcd/**` never matches docs/work/<slug>/spec.md
+default_ac
+printf '\nEvery spec in docs and lcd work dirs.\n' >> "$proj/.claude/rules/ac-convention.md"
+for r in docs spec; do
+  write_conventions "$r"
+  mkdir -p "$proj/$r"; touch "$proj/$r/MAP.md" "$proj/$r/DECISIONS.md"
+  out="$(run_doctor)"; code=$?
+  assert_exit 1 "$code" "AC-3 (CLI) root '$r' not covered by docs/lcd globs fails"
+done
 default_ac
 
 # --- living-spec: on but SPEC.md missing → WARN (not FAIL) --------------------------
