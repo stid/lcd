@@ -8,7 +8,7 @@ cite them for traceability.
 
 ## [0.20.0] — 2026-10-24
 
-Vendoring: LCD frozen into a project, for teams that can't install the plugin.
+Vendoring: LCD frozen into a project, so contributors get it by cloning, no plugin install.
 
 ### Added
 - **`bin/lcd-vendor.sh install|update|check`** writes LCD into a project's own `.claude/`:

@@ -83,8 +83,8 @@ Then, in any project:
 
 ### Vendoring: LCD inside the project, no plugin
 
-When installing a plugin isn't an option (company policy), or a project's contributors should
-get LCD just by cloning it, freeze a copy into the project from a checkout:
+When a project's contributors should get LCD just by cloning it, with no plugin to install,
+freeze a copy into the project from a checkout:
 
 ```
 /path/to/lcd/bin/lcd-vendor.sh install /path/to/project    # then commit .claude/
