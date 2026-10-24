@@ -36,9 +36,21 @@ assert_contains "$out" "not onboarded" "names the problem"
 write_conventions
 touch "$proj/docs/lcd/MAP.md" "$proj/docs/lcd/DECISIONS.md"
 printf '## LCD\nlcd:triage routes new work.\n' > "$proj/CLAUDE.md"
+default_ac() {
+  printf -- '---\npaths: ["docs/lcd/**/spec.md", "docs/lcd/**/JOURNAL.md"]\n---\n' > "$proj/.claude/rules/ac-convention.md"
+}
+
+# --- AC-3 (CLI): default root without the project ac-convention copy → WARN, not FAIL ---
+# (plugins have no rules/ component, so only the project copy ever auto-loads)
+out="$(run_doctor)"; code=$?
+assert_exit 0 "$code" "AC-3 (CLI) missing default-root ac-convention does not fail"
+assert_contains "$out" "WARN — ac-convention" "AC-3 (CLI) missing default-root ac-convention warns"
+
+default_ac
 out="$(run_doctor)"; code=$?
 assert_exit 0 "$code" "healthy setup passes"
 assert_contains "$out" "doctor: 0 FAIL, 0 WARN" "fully green"
+assert_contains "$out" "OK   — ac-convention" "AC-3 (CLI) project ac-convention covering the root is OK"
 # lowercase angle tokens (<slug>, <surface>) are substitution markers, NOT placeholders
 assert_not_contains "$out" "placeholder" "substitution tokens not flagged"
 
@@ -67,6 +79,13 @@ printf -- '---\npaths: [".lcd/**/spec.md", ".lcd/**/JOURNAL.md"]\n---\n' \
   > "$proj/.claude/rules/ac-convention.md"
 out="$(run_doctor)"; code=$?
 assert_exit 0 "$code" "override satisfies the check"
+
+# --- AC-3 (CLI): back on the default root, a copy that covers another root warns -------
+write_conventions docs/lcd
+out="$(run_doctor)"; code=$?
+assert_exit 0 "$code" "AC-3 (CLI) wrong-root copy at default root does not fail"
+assert_contains "$out" "WARN — ac-convention" "AC-3 (CLI) wrong-root copy at default root warns"
+default_ac
 
 # --- living-spec: on but SPEC.md missing → WARN (not FAIL) --------------------------
 write_conventions docs/lcd "vitest run {path}" "vitest run --bail 1 {path}" on

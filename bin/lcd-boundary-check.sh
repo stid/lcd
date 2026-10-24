@@ -18,13 +18,32 @@ input="$(cat)"
 lcd_resolve_project || exit 0
 
 file_path="$(lcd_json_field "$input" "tool_input.file_path")"
+# NotebookEdit names its target notebook_path, not file_path.
+[[ -n "$file_path" ]] || file_path="$(lcd_json_field "$input" "tool_input.notebook_path")"
 [[ -n "$file_path" ]] || exit 0
 
+# resolve_dots <abs-path> — drop `.` and resolve `..` lexically (the file may not exist yet),
+# so `src/x/../../docs/y` is matched as `docs/y`, not as a path under src/.
+resolve_dots() {
+  local part parts out=()
+  IFS=/ read -ra parts <<<"$1"
+  for part in ${parts[@]+"${parts[@]}"}; do
+    case "$part" in
+      ""|.) ;;
+      ..) [[ ${#out[@]} -gt 0 ]] && unset 'out[${#out[@]}-1]' ;;
+      *) out+=("$part") ;;
+    esac
+  done
+  printf '/%s' ${out[@]+"${out[@]}"}
+}
+
 # Normalize to project-relative; paths outside the project are not ours to police.
+[[ "$file_path" == /* ]] || file_path="$LCD_PROJ/$file_path"
+file_path="$(resolve_dots "$file_path")"
+proj_abs="$(resolve_dots "$LCD_PROJ")"
 case "$file_path" in
-  "$LCD_PROJ"/*) rel="${file_path#"$LCD_PROJ"/}" ;;
-  /*) exit 0 ;;
-  *) rel="$file_path" ;;
+  "$proj_abs"/*) rel="${file_path#"$proj_abs"/}" ;;
+  *) exit 0 ;;
 esac
 
 # Always-allowed: LCD's own artifacts and project Claude config.

@@ -93,14 +93,16 @@ if [[ -n "$root" ]] && ! is_placeholder "$root"; then
       || warn "living-spec: on but $specrel missing — reconcile has nowhere to fold (seed it from the living-spec template, or set living-spec: off)"
   fi
 
-  # B1 invariant: non-default root needs the project-local ac-convention override.
-  if [[ "$root" != "docs/lcd" ]]; then
-    acf="$proj/.claude/rules/ac-convention.md"
-    if [[ -f "$acf" ]] && grep -q "$root" "$acf"; then
-      ok "ac-convention: project override present for non-default root"
-    else
-      fail "ac-convention: artifact-root is '$root' but no project override at .claude/rules/ac-convention.md covers it — the AC rule will never auto-load (re-run /lcd:onboard)"
-    fi
+  # B1 invariant: the AC rule auto-loads only from a project copy — plugins have no rules/
+  # component. FAIL on a non-default root (as before); WARN on the default root, so projects
+  # onboarded before onboard wrote the copy don't start failing the gate.
+  acf="$proj/.claude/rules/ac-convention.md"
+  if [[ -f "$acf" ]] && grep -qF "$root" "$acf"; then
+    ok "ac-convention: project copy covers $root"
+  elif [[ "$root" != "docs/lcd" ]]; then
+    fail "ac-convention: artifact-root is '$root' but no project override at .claude/rules/ac-convention.md covers it — the AC rule will never auto-load (re-run /lcd:onboard)"
+  else
+    warn "ac-convention: no .claude/rules/ac-convention.md covering $root — the AC rule never auto-loads from the plugin (re-run /lcd:onboard to write it)"
   fi
 fi
 
