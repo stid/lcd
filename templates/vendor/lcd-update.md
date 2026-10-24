@@ -17,6 +17,8 @@ You are running **LCD update** for a project that carries a frozen copy of LCD i
      Shallow-clone it into a fresh temp dir:
      `git clone --quiet --depth 1 --branch <tag> https://github.com/stid/lcd "$(mktemp -d)/lcd"`.
    If the network or GitHub is unreachable, say so and offer the local-clone form instead.
+   If `<source>/bin/lcd-vendor.sh` doesn't exist, stop: that release predates vendoring
+   (added in 0.20.0) and can't update a frozen copy.
 3. **Preview:** run `<source>/bin/lcd-vendor.sh update --dry-run .` and show the user its output
    as is: the from → to versions, the added / changed / removed files, any `blocked` paths, and
    the CHANGELOG sections in between. If the versions are equal and nothing is listed, report
@@ -27,5 +29,9 @@ You are running **LCD update** for a project that carries a frozen copy of LCD i
    `github.com/stid/lcd`).
 5. **Apply:** `<source>/bin/lcd-vendor.sh update [--force] .` and show its summary line. Then run
    `.claude/lcd/bin/lcd-doctor.sh` and show the result.
+   **CI gate copies:** if `.github/workflows/lcd-audit.yml` exists, the gate runs its own copies
+   at `<artifact-root>/ci/{parse-acs,audit-crosspath}.sh` (artifact root from
+   `.claude/rules/lcd-conventions.md`), which the update doesn't manage. `diff` each against
+   `.claude/lcd/bin/`; if they differ, show the diff and offer to copy the new ones over.
 6. Remove the temp clone if you made one. Show `git status`. **Don't commit or push** — the user
    reviews the diff of `.claude/` first.
