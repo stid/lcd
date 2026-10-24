@@ -25,8 +25,10 @@ file_path="$(lcd_json_field "$input" "tool_input.file_path")"
 # resolve_dots <abs-path> — drop `.` and resolve `..` lexically (the file may not exist yet),
 # so `src/x/../../docs/y` is matched as `docs/y`, not as a path under src/.
 resolve_dots() {
-  local part parts out=()
-  IFS=/ read -ra parts <<<"$1"
+  # Split on / by word splitting, not `read` (which stops at a newline and would resolve only
+  # the first line of the path). set -f: a segment like `*` must not glob.
+  local part parts out=() IFS=/
+  set -f; parts=($1); set +f
   for part in ${parts[@]+"${parts[@]}"}; do
     case "$part" in
       ""|.) ;;

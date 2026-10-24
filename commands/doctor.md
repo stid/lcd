@@ -27,8 +27,8 @@ artifacts).
        `/lcd:onboard` (retrofit mode re-detects and fills the block in place).
      - watch-mode test commands (`vitest` without `run`, `jest` without `--watchAll=false`) →
        edit the key to the non-watch form; this is what hangs the red-green loop.
-     - missing `ac-convention` override on a non-default artifact root → re-run
-       `/lcd:onboard` (it writes `.claude/rules/ac-convention.md` with the right globs).
+     - missing `.claude/rules/ac-convention.md` (WARN on the default root, FAIL on a custom
+       one) → re-run `/lcd:onboard`; it writes the copy with the right globs.
 
 3. **Fix only on approval**, then re-run the script to confirm it goes green.
 

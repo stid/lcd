@@ -131,6 +131,8 @@ out="$(run_hook "src/export/../../src/other/b.ts")"
 assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) relative path with .. denied"
 out="$(run_hook "$proj/../elsewhere/c.ts")"
 [[ -z "$out" ]] || fail "AC-2 (CLI): a path resolving outside the project is not ours, got: $out"
+out="$(run_hook "$proj/src/export/a\\n/../../../docs/x.md")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) a newline in the path can't truncate resolution"
 out="$(run_hook "$proj/docs/lcd/../../src/other/d.ts")"
 assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) .. out of the always-allowed artifact root denied"
 

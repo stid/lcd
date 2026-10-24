@@ -160,7 +160,8 @@ All namespaced under `lcd:` (e.g. `/lcd:plan`).
 
 LCD **bundles** the rules its lanes depend on (`testing`, `no-overengineering`, `no-downgrade`,
 `refinement-protocol`, `versioning`, `commits`, `ac-convention`) so it works on any project without
-relying on your machine's global config. A project may override any rule with its own
+relying on your machine's global config. Onboarding copies `ac-convention` into the project's
+`.claude/rules/` so it auto-loads on specs and JOURNALs. A project may override any rule with its own
 `.claude/rules/<name>.md`.
 
 The project-side artifacts (MAP, DECISIONS, JOURNAL, SPEC) are plain Markdown and tool-agnostic:
