@@ -108,11 +108,13 @@ the path to `lcd:onboard-skipped.log`; otherwise write it. Never overwrite.
    **Constitution notes** by scanning the project's
    `CLAUDE.md` + `.claude/rules/*` for must-restate constraints (no `any`, design tokens, version
    bump, dual-engine parity, etc.).
-2. **`.claude/rules/ac-convention.md`** — **only when the chosen artifact root is NOT the default
-   `docs/lcd`**: copy `${CLAUDE_PLUGIN_ROOT}/rules/ac-convention.md` and rewrite its `paths:`
-   frontmatter to the chosen root (`["<root>/**/spec.md", "<root>/**/JOURNAL.md"]`), so the rule
-   still auto-loads on specs/JOURNALs. The bundled rule's globs only cover the default root; without
-   this override the convention never auto-loads on a custom root. Skip when root = `docs/lcd`.
+2. **`.claude/rules/ac-convention.md`** — **always**: copy `${CLAUDE_PLUGIN_ROOT}/rules/ac-convention.md`
+   and, for a non-default root, rewrite its `paths:` frontmatter to that root
+   (`["<root>/**/spec.md", "<root>/**/JOURNAL.md"]`). Plugins can't ship auto-loading rules, so
+   this project copy is the only way the convention auto-loads on specs/JOURNALs. **The one
+   exception to never-overwrite:** if the file exists but its `paths:` doesn't cover `<root>` (e.g.
+   a vendored copy seeded for `docs/lcd`), rewrite only that `paths:` line, keep the body, and
+   log it in the skip-log as `rewrote paths:`.
 3. **`<root>/MAP.md`** — from `${CLAUDE_PLUGIN_ROOT}/templates/MAP.md`, filled from the **actual** structure
    (Step 1): real top-level zones with their paths and responsibilities, real entry points, the
    surfaces actually exposed, and any invariants you can infer from CLAUDE.md/rules (e.g. the
@@ -200,8 +202,8 @@ list below mechanically and must report **0 FAIL**. Then confirm:
 - `<root>/DECISIONS.md` exists (seeded or empty header).
 - If `living-spec: on`, `<root>/SPEC.md` exists (from the living-spec template); if `off`, it is
   absent and that's correct.
-- Non-default artifact root → `.claude/rules/ac-convention.md` exists with `paths:` globs matching
-  that root (otherwise the AC convention never auto-loads).
+- `.claude/rules/ac-convention.md` exists with `paths:` globs matching the artifact root
+  (otherwise the AC convention never auto-loads).
 - `settings.json` (or `settings.local.json` if the user chose machine-local) still parses as JSON.
 - CLAUDE.md has exactly one LCD pointer; AGENTS.md (if the project has one) too.
 - **If Step 1 found nothing that reviews the diff, say so once, in one line, and move on.** LCD's

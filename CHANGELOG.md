@@ -6,6 +6,23 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.20.1] — 2026-10-24
+
+### Fixed
+- **Edit-boundary hook** checks `NotebookEdit`, whose path arrives as
+  `tool_input.notebook_path`. Before this, notebook edits outside the boundary were allowed. It
+  also resolves `.` and `..` before matching: `src/x/../../docs/y` is checked as `docs/y`,
+  and a newline in the path can't cut the resolution short (#21).
+- **The AC convention now actually auto-loads (#22).** Plugins have no rules component, so the
+  plugin's `ac-convention` never loaded on its own. Onboard now always writes the project copy
+  `.claude/rules/ac-convention.md`. If a copy exists whose `paths:` doesn't cover the artifact
+  root, onboard rewrites that one line. Doctor checks the copy at every root: WARN on the
+  default root (projects onboarded earlier: re-run `/lcd:onboard`), FAIL on a custom root as
+  before. Coverage is judged on the `paths:` globs (`"<root>/**"`), so root `docs` no longer
+  passes on the stock `docs/lcd` globs. Docs no longer claim the plugin copy auto-loads.
+- **Boundary-hook tests:** the fixture's branch switch-back failed silently in a repo with no
+  commits, so every later case ran with no active work-item and passed without testing anything.
+
 ## [0.20.0] — 2026-10-24
 
 Vendoring: LCD frozen into a project, so contributors get it by cloning, no plugin install.

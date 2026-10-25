@@ -3,12 +3,10 @@ paths: ["docs/lcd/**/spec.md", "docs/lcd/**/JOURNAL.md"]
 ---
 # Acceptance Criteria Convention
 
-> The AC convention for LCD. `paths:` covers the **default** artifact root (`docs/lcd/**`), so this
-> rule auto-loads when you open a spec or JOURNAL there. If a project chose a different
-> `artifact-root` at onboarding, `/lcd:onboard` writes a project-local copy of this rule to
-> `.claude/rules/ac-convention.md` with `paths:` globs derived from that root (a project rule
-> overrides the bundled one of the same name). Used in the Deep lane and in any Standard-lane
-> JOURNAL that declares a surface.
+> The AC convention for LCD. Plugins can't ship auto-loading rules, so `/lcd:onboard` writes a
+> copy of this file to the project's `.claude/rules/ac-convention.md`, where the `paths:` scope
+> makes it auto-load when you open a spec or JOURNAL (globs rewritten for a non-default
+> `artifact-root`). Used in the Deep lane and in any Standard-lane JOURNAL that declares a surface.
 
 Every acceptance criterion in a work-item `spec.md` (or a Standard-lane `JOURNAL.md`) MUST follow this format:
 

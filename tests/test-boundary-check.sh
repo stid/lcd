@@ -99,7 +99,10 @@ out="$(run_hook "/somewhere/else/file.txt")"
 git -C "$proj" checkout -q -b another-branch
 out="$(run_hook "$proj/src/other/unrelated.ts")"
 [[ -z "$out" ]] || fail "no branch match must allow, got: $out"
-git -C "$proj" checkout -q feat/export-csv
+# symbolic-ref, not checkout: the fixture repo has no commits, so `checkout` back to the
+# unborn feat/export-csv fails silently and every later case would run with nothing active.
+git -C "$proj" symbolic-ref HEAD refs/heads/feat/export-csv
+[[ "$(git -C "$proj" symbolic-ref --short HEAD)" == "feat/export-csv" ]] || fail "fixture: branch switch-back failed"
 
 # --- all steps done → work-item inactive → allow ------------------------------
 sedi 's/- \[ \] S2/- [x] S2/' "$proj/docs/lcd/work/export-csv/JOURNAL.md"
@@ -107,9 +110,40 @@ out="$(run_hook "$proj/src/other/unrelated.ts")"
 [[ -z "$out" ]] || fail "done work-item must not enforce, got: $out"
 sedi 's/- \[x\] S2/- [ ] S2/' "$proj/docs/lcd/work/export-csv/JOURNAL.md"
 
+# --- AC-1 (CLI): NotebookEdit sends notebook_path, not file_path ---------------
+run_nb() {
+  CLAUDE_PROJECT_DIR="$proj" bash ${DBG:+-x} "$PLUGIN_BIN/lcd-boundary-check.sh" <<EOF
+{"hook_event_name":"PreToolUse","tool_name":"NotebookEdit","tool_input":{"notebook_path":"$1","new_source":"x"}}
+EOF
+}
+out="$(run_nb "$proj/src/other/analysis.ipynb")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-1 (CLI) out-of-boundary NotebookEdit denied"
+out="$(run_nb "$proj/src/export/analysis.ipynb")"
+[[ -z "$out" ]] || fail "AC-1 (CLI): in-boundary NotebookEdit should be allowed, got: $out"
+
+# --- AC-2 (CLI): . and .. segments are resolved before matching ----------------
+out="$(run_hook "$proj/src/export/../../docs/x.md")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) .. escaping the boundary denied"
+assert_contains "$out" "'docs/x.md'" "AC-2 (CLI) deny reason shows the resolved path"
+out="$(run_hook "$proj/src/other/../export/./a.ts")"
+[[ -z "$out" ]] || fail "AC-2 (CLI): .. resolving inside the boundary should be allowed, got: $out"
+out="$(run_hook "src/export/../../src/other/b.ts")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) relative path with .. denied"
+out="$(run_hook "$proj/../elsewhere/c.ts")"
+[[ -z "$out" ]] || fail "AC-2 (CLI): a path resolving outside the project is not ours, got: $out"
+out="$(run_hook "$proj/src/export/a\\n/../../../docs/x.md")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) a newline in the path can't truncate resolution"
+# a `*` segment must stay literal: from a cwd holding `export`, an unguarded split globs it
+mkdir -p "$tmp/cwd/export"
+out="$(cd "$tmp/cwd" && run_hook "$proj/src/*/a.ts")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) glob characters in a path segment are not expanded"
+out="$(run_hook "$proj/docs/lcd/../../src/other/d.ts")"
+assert_contains "$out" '"permissionDecision":"deny"' "AC-2 (CLI) .. out of the always-allowed artifact root denied"
+
 # --- placeholder-only boundary → no enforcement (fail open) -------------------
-sedi 's|- `src/export/`|- `<path>`|; s|- `tests/export.test.ts`|- `<path2>`|' \
-  "$proj/docs/lcd/work/export-csv/JOURNAL.md"
+# Every boundary bullet becomes a template placeholder (no real entry left).
+sedi '/^## EDIT BOUNDARY/,/lcd-resume -->/s|^- `.*|- `<path>`|' "$proj/docs/lcd/work/export-csv/JOURNAL.md"
+[[ "$(grep -c '^- `<path>`' "$proj/docs/lcd/work/export-csv/JOURNAL.md")" -ge 2 ]] || fail "fixture: placeholders not written"
 out="$(run_hook "$proj/src/other/unrelated.ts")"
 [[ -z "$out" ]] || fail "placeholder boundary must fail open, got: $out"
 

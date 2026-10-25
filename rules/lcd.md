@@ -122,6 +122,7 @@ project, a missing dependency, or an unfilled artifact always means "allow":
 LCD **ships** the rules its lanes depend on, so it works on any project without relying on your
 machine's global config. They live in the plugin and are read via `${CLAUDE_PLUGIN_ROOT}/rules/<name>.md`:
 `testing`, `no-overengineering`, `no-downgrade`, `refinement-protocol`, `versioning`, `commits`,
-plus `ac-convention` (the one with `paths:` frontmatter, so it auto-loads on specs/JOURNALs). The
+plus `ac-convention` (the one with `paths:` frontmatter; onboard copies it into the project's
+`.claude/rules/`, the only place it auto-loads from, since plugins have no rules component). The
 Deep-lane plan's Constitution check reads them from there. **A project may override any rule** with
 its own `.claude/rules/<name>.md` — the project's version wins when present.
