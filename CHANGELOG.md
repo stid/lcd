@@ -6,6 +6,17 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.21.0] — 2026-10-24
+
+### Added
+- **`/lcd:vendor [install|update|check]`** freezes LCD into the current project from a plugin
+  session, so you no longer have to call `lcd-vendor.sh` by path. It previews with `--dry-run`,
+  asks, applies, and runs doctor. On install it offers to set `"enabledPlugins": {"lcd@lcd": false}`
+  in the project's `.claude/settings.json` so the plugin and the frozen copy don't both run.
+  It calls its own plugin's script by path, because with two LCD copies loaded the name on PATH
+  can resolve to another version.
+  The frozen copy doesn't carry it (it carries `/lcd-update` instead); a test checks that.
+
 ## [0.20.1] — 2026-10-24
 
 ### Fixed
