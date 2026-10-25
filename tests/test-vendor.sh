@@ -67,6 +67,8 @@ for f in skills/lcd-triage/SKILL.md skills/lcd-triage/references/lanes.md \
   [[ -f "$proj/.claude/$f" ]] || fail "AC-1 (CLI): .claude/$f missing"
 done
 [[ ! -e "$proj/.claude/lcd/bin/lcd-vendor.sh" ]] || fail "AC-1 (CLI): vendor script itself was vendored"
+[[ -f "$src/commands/vendor.md" ]] || fail "fixture: source has no commands/vendor.md"
+[[ ! -e "$proj/.claude/commands/lcd-vendor.md" ]] || fail "AC-1 (CLI): plugin-only /lcd:vendor was vendored (its script isn't)"
 assert_contains "$(cat "$proj/.claude/skills/lcd-triage/SKILL.md")" "name: lcd-triage" "AC-1 (CLI) skill renamed"
 left="$(grep -rl 'CLAUDE_PLUGIN_ROOT' "$proj/.claude" || true)"
 [[ -z "$left" ]] || fail "AC-1 (CLI): CLAUDE_PLUGIN_ROOT left in: $left"
