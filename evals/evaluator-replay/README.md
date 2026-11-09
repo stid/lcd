@@ -14,7 +14,7 @@ Only the agent definition varies between arms. Introduced by stid/lcd#26 (harnes
 | deep-1 | `c7bbe61` | stands | none |
 | deep-2 | `6132f8d` | challenged | `checksum-count-only`, `stats-empty-query-parity` |
 | deep-3 | `bcb0142` | challenged | `checksum-first-record` (missed), `stats-empty-query-parity`, `timestamp-bracket` |
-| no-test-command | `5af6d64` | — | none: standard-1 plus one commit declaring no test command (AC-4) |
+| no-test-command | `6ce6da7` | — | none: standard-1 plus one neutral commit removing every declared test command (AC-4) |
 
 - **State.** The last commit before the dispatch timestamp in the original transcript.
 - **Truncation.** Each bundle carries only the case refs at those commits, so the later

@@ -39,8 +39,11 @@ $heads"
   # No post-dispatch commit: nothing in the history mentions the evaluator's findings.
   clone="$tmp/integrity-$id"
   git clone -q "$b" "$clone" 2>/dev/null || fail "AC-6 (EVAL): $id bundle does not clone"
-  if git -C "$clone" log --all --format=%B | grep -qi 'evaluator'; then
-    fail "AC-6 (EVAL): $id history mentions the evaluator (post-dispatch commit leaked)"
+  if git -C "$clone" log --all --format=%B | grep -Eqi 'evaluator|replay'; then
+    fail "AC-6 (EVAL): $id history mentions the evaluator or the replay (leak)"
+  fi
+  if git -C "$clone" grep -lE '/Users/|/home/' $(git -C "$clone" rev-list --all) >/dev/null 2>&1; then
+    fail "AC-6 (EVAL): $id bundle history contains a machine path"
   fi
   # Prompts are templated and carry no machine paths (plugin stays self-contained).
   grep -q '{ROOT}' "$p" || fail "AC-6 (EVAL): $id prompt is not {ROOT}-templated"
@@ -72,6 +75,9 @@ for key in gate bail scoped-test; do
   grep -Eq "^${key}: n/a" <<<"$conv" || fail "AC-4 (EVAL): $key is not n/a in the no-test-command case"
 done
 if grep -q 'node --test' "$ntc_prompt"; then fail "AC-4 (EVAL): prompt names a test command"; fi
+if git -C "$tmp/ntc" grep -l 'node --test' -- . ':!tests' >/dev/null 2>&1; then
+  fail "AC-4 (EVAL): the case still names its test command: $(git -C "$tmp/ntc" grep -l 'node --test' -- . ':!tests' | tr '\n' ' ')"
+fi
 
 # --- Synthetic dataset + fake model for the runner tests ----------------------------------
 # A one-commit project whose declared gate is `true`, bundled; the fake model binary performs
@@ -99,12 +105,14 @@ emit_bash() { # id, command, output
 emit_bash t1 'true' 'suite ok'
 emit_bash t2 'd=$(mktemp -d) && git clone -q . "$d/c" && cd "$d/c" && true' 'mutant survived'
 emit_bash t3 'rm -rf /tmp/lcd-fixed-probe' ''
+emit_bash t4 'rm -rf "$d"' ''
 case "${FAKE_MODE:-clean}" in
   limit) jq -cn '{type:"result",is_error:true,result:"You have hit your 5-hour limit"}'; exit 1 ;;
   dirty-file) echo junk > stray.txt ;;
   dirty-ref)  git update-ref refs/heads/evil HEAD ;;
 esac
-jq -cn '{type:"result",result:"My report above stands unchanged.\n- `verdict` — **challenged**\nfindings: ...",total_cost_usd:0.25,usage:{input_tokens:10,cache_read_input_tokens:1000,cache_creation_input_tokens:200,output_tokens:50}}'
+n=0; [[ -n "${FAKE_COUNTER:-}" ]] && { n=$(cat "$FAKE_COUNTER" 2>/dev/null || echo 0); echo $((n + 1)) > "$FAKE_COUNTER"; }
+jq -cn --argjson extra $((n * 100)) '{type:"result",result:"My report above stands unchanged.\n- `verdict` — **challenged**\nfindings: ...",total_cost_usd:0.25,usage:{input_tokens:10,cache_read_input_tokens:(1000 + $extra),cache_creation_input_tokens:200,output_tokens:50}}'
 FAKE
 chmod +x "$fake"
 run_replay() { # out-dir, extra args...
@@ -138,6 +146,15 @@ assert_contains "$argv" 'lcd:lcd-evaluator' "AC-1 (EVAL): dispatch runs the eval
 assert_contains "$argv" 'Project root: /' "AC-1 (EVAL): {ROOT} replaced with the workspace path"
 assert_not_contains "$argv" '{ROOT}' "AC-1 (EVAL): no template left in the prompt"
 [[ "$(row_field "$rows" verdict)" == challenged ]] || fail "AC-1 (EVAL): verdict parsed from result"
+for flag in --settings enabledPlugins --disallowedTools advisor --model claude-fable-5-1 --plugin-dir --dangerously-skip-permissions; do
+  assert_contains "$argv" "$flag" "AC-1 (EVAL): real dispatch argv carries $flag"
+done
+pdir="$(grep -A1 -x -- '--plugin-dir' "$tmp/argv" | tail -1)"
+[[ "$pdir" == /* && -f "$pdir/.claude-plugin/plugin.json" ]] || fail "AC-1 (EVAL): --plugin-dir must be an existing absolute path (got $pdir)"
+( cd "$tmp" && FAKE_ARGV="$tmp/argv-rel" EVAL_CLAUDE_BIN="$fake" bash "$runner" run --dataset "$syn" \
+    --old-ref HEAD --new-ref HEAD --reps 1 --arms new --out relout >/dev/null 2>&1 ) || fail "AC-1 (EVAL): relative --out run failed"
+pdir="$(grep -A1 -x -- '--plugin-dir' "$tmp/argv-rel" | tail -1)"
+[[ "$pdir" == /* && -f "$pdir/.claude-plugin/plugin.json" ]] || fail "AC-1 (EVAL): relative --out must resolve to an absolute plugin dir (got $pdir)"
 
 # --- AC-2 (EVAL): runner counts mutant runs in fresh temp copies -------------------------
 [[ "$(row_field "$rows" mktemp_copies)" == 1 ]] \
@@ -158,10 +175,12 @@ assert_contains "$logc" '$ true' "AC-5 (EVAL): log lists the executed command"
 assert_contains "$logc" 'mutant survived' "AC-5 (EVAL): log carries the command's output"
 [[ "$(row_field "$rows" total_tokens)" == 1260 ]] || fail "AC-5 (EVAL): tokens summed from the result usage"
 run_replay "$tmp/r1" --reps 2 >/dev/null 2>&1 && fail "AC-5 (EVAL): run must refuse an existing out dir"
-sum="$(bash "$runner" summarize --out "$tmp/r1" 2>&1)"; code=$?
+printf '0' > "$tmp/counter"
+FAKE_COUNTER="$tmp/counter" run_replay "$tmp/r5" --reps 2 >/dev/null
+sum="$(bash "$runner" summarize --out "$tmp/r5" 2>&1)"; code=$?
 assert_exit 0 "$code" "AC-5 (EVAL): summarize exits 0"
 assert_contains "$sum" 'new' "AC-5 (EVAL): summary row per arm"
-assert_contains "$sum" '1260' "AC-5 (EVAL): summary reports mean tokens per arm"
+assert_contains "$sum" '1310' "AC-5 (EVAL): summary reports the MEAN tokens per arm (1260 and 1360)"
 
 # --- AC-6 (EVAL): runner refuses on a failed dispatch instead of recording it as a result ---
 out="$(FAKE_MODE=limit run_replay "$tmp/r4")"; code=$?

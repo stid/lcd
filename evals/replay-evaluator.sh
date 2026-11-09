@@ -85,6 +85,9 @@ manifest="$dataset/cases.json"
 jq -e 'type == "array"' "$manifest" >/dev/null 2>&1 || refuse "cannot parse $manifest"
 [[ "$reps" =~ ^[1-9][0-9]*$ ]] || refuse "--reps must be a positive integer"
 [[ ! -e "$out" ]] || refuse "out dir already exists: $out"
+# Absolute: the dispatch runs with cwd = the case workspace, so a relative --plugin-dir would miss.
+[[ -d "$(dirname "$out")" ]] || refuse "parent of --out does not exist: $(dirname "$out")"
+out="$(cd "$(dirname "$out")" && pwd -P)/$(basename "$out")"
 
 arm_list=""
 for arm in ${arms//,/ }; do
