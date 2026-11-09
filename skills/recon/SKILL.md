@@ -1,7 +1,6 @@
 ---
 name: recon
 description: Ground a LCD work-item in CURRENT best practice before deciding on an approach. Resolves up-to-date library/API/tooling guidance via Context7 and a targeted web search, in a subagent, and returns a few dated bullets. Use at the start of Standard/Deep work that touches a library, framework, SDK, API, or pattern whose current best practice you're not certain of — before writing the plan or choosing a dependency.
-user-invocable: true
 ---
 
 # LCD Recon

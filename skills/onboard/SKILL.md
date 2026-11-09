@@ -1,7 +1,6 @@
 ---
 name: onboard
-description: Make a project Lean Context Development aware. Use when a project has no .claude/rules/lcd-conventions.md yet (first-time LCD setup), when the user says "set up LCD here" / "make this project LCD-aware" / runs /lcd:onboard, or to refresh a stale MAP or conventions block. Generates a MAP.md of the actual code organization, seeds DECISIONS.md, records test-discovery/runner conventions, asks once where LCD artifacts live, and appends a triage pointer to CLAUDE.md. Works on new and existing projects. Retrofit-safe.
-user-invocable: true
+description: Make a project Lean Context Development aware. Use when a project has no .claude/rules/lcd-conventions.md yet (first-time LCD setup), when the user says "set up LCD here" / "make this project LCD-aware" / runs /lcd:onboard, or to refresh a stale MAP or conventions block. Generates a MAP.md of the actual code organization, seeds DECISIONS.md, records test-discovery/runner conventions, asks once where LCD artifacts live, and appends a triage pointer to CLAUDE.md (or AGENTS.md). Works on new and existing projects. Retrofit-safe.
 allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
 ---
 
@@ -139,20 +138,31 @@ the path to `lcd:onboard-skipped.log`; otherwise write it. Never overwrite.
      rigor**: the next work-item that touches a capability supersedes its row with a real AC-pinned
      `D-NNN` (see `lcd:reconcile`).
    - Skip the file entirely when Q3 was No.
-6. **CLAUDE.md pointer** — if `CLAUDE.md` exists and has no LCD pointer, append the ~12-line section
-   (below). If `CLAUDE.md` doesn't exist, create a minimal one with just this section. Skip if a
-   pointer is already present. **Also: if `AGENTS.md` exists** (the cross-tool standard for
-   agent instructions — Linux Foundation-stewarded, read by most coding agents; Claude Code itself
-   reads it when no CLAUDE.md is present), append the same pointer section there too (skip if
-   present). The layering stance (D-017): **AGENTS.md carries the shared, tool-agnostic layer** —
-   LCD's artifacts and lane discipline work even where the `lcd:*` commands aren't available —
-   while **CLAUDE.md carries the Claude-specific layer**. Don't *create* an AGENTS.md (the project
-   may not use other agents); mention in the completion message that creating one would extend the
-   LCD pointer to them. **Keep the always-loaded layer small and hand-maintained:** these files are
-   read every turn, and 2026 research on agent-instruction files finds hand-written ones help
-   agents while bulk machine-generated ones can hurt outcomes and add cost — so append the ~12-line
-   pointer and nothing more; never auto-generate prose into CLAUDE.md/AGENTS.md beyond it, and if
-   the file is already long, say so rather than adding to the pile.
+6. **CLAUDE.md pointer** — the ~12-line section (below) must reach Claude exactly once. Claude Code
+   (2.1.277 and later) reads `AGENTS.md` only when there is no `CLAUDE.md`, or when `CLAUDE.md`
+   imports it with an `@AGENTS.md` line. So, skipping any file that already has the pointer:
+   - **Neither file exists:** create a minimal `CLAUDE.md` with just the pointer.
+   - **Only `AGENTS.md` exists:** append the pointer to `AGENTS.md`, and create `CLAUDE.md` whose
+     first line is `@AGENTS.md`. Never create a `CLAUDE.md` without that import here: it would stop
+     Claude Code reading `AGENTS.md`, silently dropping the project's existing instructions.
+   - **`CLAUDE.md` imports `@AGENTS.md`:** append the pointer to `AGENTS.md` only.
+   - **Only `CLAUDE.md` exists:** append the pointer to it.
+   - **`CLAUDE.md` is a symlink to `AGENTS.md`, or the reverse:** it is one file; append once.
+   - **Both exist, no import:** append the pointer to both. Tell the user in the completion message
+     that Claude Code is not reading their `AGENTS.md`, and that adding `@AGENTS.md` to
+     `CLAUDE.md` fixes it. Don't add the import yourself: it changes what loads on every turn.
+
+   The layering stance (D-017): **AGENTS.md carries the shared, tool-agnostic layer** (the
+   cross-tool standard, read by most coding agents; LCD's artifacts and lanes work even where the
+   `lcd:*` commands aren't available), while **CLAUDE.md carries the Claude-specific layer**. Don't
+   *create* an AGENTS.md (the project may not use other agents); mention in the completion message
+   that creating one would extend the LCD pointer to them. **Keep the always-loaded layer small and
+   hand-maintained:** these files are read every turn, and the measured effect of instruction files
+   is small (developer-written ones beat LLM-generated ones, while either adds cost: arXiv
+   2602.11988) — so append the ~12-line pointer and nothing more; never auto-generate prose into
+   CLAUDE.md/AGENTS.md beyond it, and if the file is already long, say so rather than adding to the
+   pile.
+
 7. **`.claude/settings.json`** (the **committed, team-shared** file — the rest of the LCD spine is
    committed, so the permissions that make it run unattended should be too; a teammate cloning the
    repo then onboards for free) — merge-add (never clobber other keys; validate JSON parses) the
@@ -205,7 +215,8 @@ list below mechanically and must report **0 FAIL**. Then confirm:
 - `.claude/rules/ac-convention.md` exists with `paths:` globs matching the artifact root
   (otherwise the AC convention never auto-loads).
 - `settings.json` (or `settings.local.json` if the user chose machine-local) still parses as JSON.
-- CLAUDE.md has exactly one LCD pointer; AGENTS.md (if the project has one) too.
+- Doctor reports `OK — pointer` and no `WARN — AGENTS.md`, or you told the user why there is one
+  (both files, no import: their call).
 - **If Step 1 found nothing that reviews the diff, say so once, in one line, and move on.** LCD's
   own gates do not read code: the `gate` command runs the suite, and the Deep-lane audit checks that
   every acceptance criterion has a test. Neither can see a defect in code no criterion describes, and

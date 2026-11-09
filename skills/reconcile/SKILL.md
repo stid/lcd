@@ -1,7 +1,6 @@
 ---
 name: reconcile
 description: Fold a closed LCD work-item's acceptance criteria into the project's living current-state spec (SPEC.md) at closeout. Runs only when `living-spec: on` in lcd-conventions. Use at a work-item's finish line — after audit PASS (Deep) or when the JOURNAL flips to done (Standard) — to compact the frozen delta into the one document that says "what the system does now". Not for mid-work edits (that's lcd:refine).
-user-invocable: true
 allowed-tools: [Read, Edit, Write, Bash, Grep]
 ---
 

@@ -142,9 +142,7 @@ single-shot quality; the evaluator caught real defects the green suite missed in
 runs; the cross-session half is the open measurement (longitudinal eval planned). Prompt
 changes ship with an eval row as evidence,
 and A/B arms have decided real design questions — step enumeration was dropped from three phase
-commands and kept in `test-gen` on measured cost and quality, not taste. A 2026 survey of
-spec-driven frameworks (arXiv 2606.04967) names the absence of process benchmarks as a
-field-wide gap; LCD's harness is its answer for its own process.
+commands and kept in `test-gen` on measured cost and quality, not taste.
 
 ## Learn more
 
@@ -171,9 +169,13 @@ relying on your machine's global config. Onboarding copies `ac-convention` into 
 `.claude/rules/<name>.md`.
 
 The project-side artifacts (MAP, DECISIONS, JOURNAL, SPEC) are plain Markdown and tool-agnostic:
-if the project has an `AGENTS.md` (the cross-tool agent-instructions standard), onboarding appends
-the LCD pointer there too, so non-Claude agents on the team follow the same map and lanes —
-AGENTS.md carries the shared layer, CLAUDE.md the Claude-specific one.
+if the project has an `AGENTS.md` (the cross-tool agent-instructions standard), onboarding puts
+the LCD pointer there, so non-Claude agents on the team follow the same map and lanes —
+AGENTS.md carries the shared layer, CLAUDE.md the Claude-specific one. Claude Code reads
+`AGENTS.md` only when there is no `CLAUDE.md` or `CLAUDE.md` imports it (`@AGENTS.md`), so
+onboarding writes the pointer where Claude will load it once: in `AGENTS.md` behind an import it
+creates when a project has only `AGENTS.md`, and in both files when `CLAUDE.md` doesn't import it
+(doctor then warns that `CLAUDE.md` hides `AGENTS.md`).
 
 ## Contributing
 
