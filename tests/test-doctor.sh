@@ -163,6 +163,28 @@ printf '# Shared rules\nUse tabs.\n' > "$proj/AGENTS.md"
 out="$(run_doctor)"; code=$?
 assert_contains "$out" "OK   — pointer" "AC-1 (CLI) pointer in CLAUDE.md is loaded"
 assert_contains "$out" "WARN — AGENTS.md" "AC-2 (CLI) both files, no import, still warns"
+
+# the import only helps if the imported AGENTS.md carries the pointer
+printf '@AGENTS.md\n' > "$proj/CLAUDE.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "WARN — pointer" "AC-1 (CLI) import of an AGENTS.md without the pointer warns"
 rm -f "$proj/AGENTS.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "WARN — pointer" "AC-1 (CLI) import of a missing AGENTS.md warns"
+
+# mentioning AGENTS.md in prose is not an import
+printf "$pointer" > "$proj/AGENTS.md"
+printf '# Project\nSee AGENTS.md for shared rules.\n' > "$proj/CLAUDE.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "WARN — pointer" "AC-1 (CLI) prose mention of AGENTS.md is not an import"
+assert_contains "$out" "WARN — AGENTS.md" "AC-2 (CLI) prose mention of AGENTS.md still shadows"
+
+# CLAUDE.md symlinked to AGENTS.md: one file, Claude loads it, nothing is hidden
+rm -f "$proj/CLAUDE.md"
+ln -s AGENTS.md "$proj/CLAUDE.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "OK   — pointer" "AC-1 (CLI) CLAUDE.md symlinked to AGENTS.md is loaded"
+assert_not_contains "$out" "WARN — AGENTS.md" "AC-2 (CLI) CLAUDE.md symlinked to AGENTS.md does not shadow"
+rm -f "$proj/CLAUDE.md" "$proj/AGENTS.md"
 
 exit 0

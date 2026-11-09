@@ -169,11 +169,13 @@ relying on your machine's global config. Onboarding copies `ac-convention` into 
 `.claude/rules/<name>.md`.
 
 The project-side artifacts (MAP, DECISIONS, JOURNAL, SPEC) are plain Markdown and tool-agnostic:
-if the project has an `AGENTS.md` (the cross-tool agent-instructions standard), onboarding appends
-the LCD pointer there too, so non-Claude agents on the team follow the same map and lanes —
+if the project has an `AGENTS.md` (the cross-tool agent-instructions standard), onboarding puts
+the LCD pointer there, so non-Claude agents on the team follow the same map and lanes —
 AGENTS.md carries the shared layer, CLAUDE.md the Claude-specific one. Claude Code reads
-`AGENTS.md` only when there is no `CLAUDE.md` or `CLAUDE.md` imports it (`@AGENTS.md`); onboarding
-creates that import when a project has only `AGENTS.md`, and doctor warns when `CLAUDE.md` hides it.
+`AGENTS.md` only when there is no `CLAUDE.md` or `CLAUDE.md` imports it (`@AGENTS.md`), so
+onboarding writes the pointer where Claude will load it once: in `AGENTS.md` behind an import it
+creates when a project has only `AGENTS.md`, and in both files when `CLAUDE.md` doesn't import it
+(doctor then warns that `CLAUDE.md` hides `AGENTS.md`).
 
 ## Contributing
 

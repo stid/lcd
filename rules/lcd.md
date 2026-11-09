@@ -1,8 +1,8 @@
 # Lean Context Development (LCD) — methodology reference
 
 > On-demand reference (no `paths:` frontmatter, so it is **not** always-loaded). The always-on
-> trigger lives in each onboarded project's `CLAUDE.md` (a ~12-line pointer written by
-> `/lcd:onboard`). This file is the full picture for when you need it.
+> trigger lives in each onboarded project's `CLAUDE.md`, or its `AGENTS.md` when `CLAUDE.md` imports
+> it (a ~12-line pointer written by `/lcd:onboard`). This file is the full picture for when you need it.
 
 ## Defining principle
 

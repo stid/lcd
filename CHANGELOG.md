@@ -17,7 +17,8 @@ cite them for traceability.
   onboard says so and leaves the choice to you.
 - **Doctor checks the pointer Claude actually loads (#25).** The pointer counts in `CLAUDE.md`, in
   an imported `AGENTS.md`, or in `AGENTS.md` when there is no `CLAUDE.md`. A new WARN fires when
-  `CLAUDE.md` exists and doesn't import an existing `AGENTS.md`. Projects onboarded earlier with
+  `CLAUDE.md` exists and doesn't import an existing `AGENTS.md` (unless one is a symlink to the
+  other). Projects onboarded earlier with
   both files may see this WARN: add `@AGENTS.md` to `CLAUDE.md` if its instructions should apply.
 - **Doc claims (#27).** README no longer presents LCD's eval harness as the answer to a field-wide
   gap (other frameworks now publish process evals), and explains how Claude Code picks between
@@ -26,8 +27,9 @@ cite them for traceability.
 
 ### Changed
 - **Skill frontmatter (#28):** dropped `user-invocable: true` from five skills. It is the default,
-  and the Agent Skills spec's validator rejects fields it doesn't define. `redgreen-loop` keeps
-  `user-invocable: false`.
+  and the Agent Skills spec's validator rejects fields it doesn't define, so those five now pass it.
+  `redgreen-loop` keeps `user-invocable: false`, a Claude Code extension the spec validator still
+  rejects: that skill stays Claude Code-specific.
 
 ## [0.21.0] — 2026-10-24
 

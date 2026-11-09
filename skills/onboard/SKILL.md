@@ -1,6 +1,6 @@
 ---
 name: onboard
-description: Make a project Lean Context Development aware. Use when a project has no .claude/rules/lcd-conventions.md yet (first-time LCD setup), when the user says "set up LCD here" / "make this project LCD-aware" / runs /lcd:onboard, or to refresh a stale MAP or conventions block. Generates a MAP.md of the actual code organization, seeds DECISIONS.md, records test-discovery/runner conventions, asks once where LCD artifacts live, and appends a triage pointer to CLAUDE.md. Works on new and existing projects. Retrofit-safe.
+description: Make a project Lean Context Development aware. Use when a project has no .claude/rules/lcd-conventions.md yet (first-time LCD setup), when the user says "set up LCD here" / "make this project LCD-aware" / runs /lcd:onboard, or to refresh a stale MAP or conventions block. Generates a MAP.md of the actual code organization, seeds DECISIONS.md, records test-discovery/runner conventions, asks once where LCD artifacts live, and appends a triage pointer to CLAUDE.md (or AGENTS.md). Works on new and existing projects. Retrofit-safe.
 allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
 ---
 
@@ -147,6 +147,7 @@ the path to `lcd:onboard-skipped.log`; otherwise write it. Never overwrite.
      Claude Code reading `AGENTS.md`, silently dropping the project's existing instructions.
    - **`CLAUDE.md` imports `@AGENTS.md`:** append the pointer to `AGENTS.md` only.
    - **Only `CLAUDE.md` exists:** append the pointer to it.
+   - **`CLAUDE.md` is a symlink to `AGENTS.md`, or the reverse:** it is one file; append once.
    - **Both exist, no import:** append the pointer to both. Tell the user in the completion message
      that Claude Code is not reading their `AGENTS.md`, and that adding `@AGENTS.md` to
      `CLAUDE.md` fixes it. Don't add the import yourself: it changes what loads on every turn.

@@ -128,7 +128,9 @@ else
   warn "pointer: no LCD pointer that Claude Code loads — triage won't be suggested on new work (re-run /lcd:onboard)"
 fi
 
-if [[ -f "$claude_md" && -f "$agents_md" && $imports_agents -eq 0 ]]; then
+# Same file (one symlinked to the other) → Claude loads its content through CLAUDE.md.
+if [[ -f "$claude_md" && -f "$agents_md" && $imports_agents -eq 0 ]] \
+  && ! [[ "$claude_md" -ef "$agents_md" ]]; then
   warn "AGENTS.md: Claude Code doesn't read it while CLAUDE.md exists — add a line '@AGENTS.md' to CLAUDE.md if its instructions should apply to Claude"
 fi
 
