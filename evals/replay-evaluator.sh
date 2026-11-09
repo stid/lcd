@@ -209,10 +209,18 @@ for c in $case_ids; do
       jq -rs 'map(select(.type == "result")) | last | .result // ""' "$base.jsonl" > "$base.report.md" 2>/dev/null || true
 
       IFS=$'\t' read -r suite mk fixed tin tcr tcc tout ttot cost verdict <<<"$metrics"
+      # A failed dispatch (is_error, usage limit, no result) is not an evaluator verdict: record it
+      # as `error` and stop, so a limit or auth failure cannot fill the table with junk rows.
+      failed="$(jq -rs 'map(select(.type == "result")) | last
+        | if . == null then "yes" elif (.is_error == true)
+            or ((.result // "") | test("hit your .*limit"; "i")) then "yes" else "no" end' \
+        "$base.jsonl" 2>/dev/null || echo yes)"
+      [[ "$failed" == yes ]] && verdict=error
       printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$c" "$arm" "$rep" \
         "$verdict" "$unchanged" "$suite" "$mk" "$fixed" "$tin" "$tcr" "$tcc" "$tout" "$ttot" "$cost" \
         "$code" "$base.jsonl" >> "$out/rows.tsv"
       echo "$c $arm rep $rep: $verdict · tree_unchanged=$unchanged · tokens=$ttot · exit=$code"
+      [[ "$failed" == yes ]] && refuse "dispatch failed ($c $arm rep $rep): $(head -c 200 "$base.report.md" 2>/dev/null) — see $base.stderr; rows so far: $out/rows.tsv"
     done
   done
 done

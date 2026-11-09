@@ -100,6 +100,7 @@ emit_bash t1 'true' 'suite ok'
 emit_bash t2 'd=$(mktemp -d) && git clone -q . "$d/c" && cd "$d/c" && true' 'mutant survived'
 emit_bash t3 'rm -rf /tmp/lcd-fixed-probe' ''
 case "${FAKE_MODE:-clean}" in
+  limit) jq -cn '{type:"result",is_error:true,result:"You have hit your 5-hour limit"}'; exit 1 ;;
   dirty-file) echo junk > stray.txt ;;
   dirty-ref)  git update-ref refs/heads/evil HEAD ;;
 esac
@@ -161,6 +162,12 @@ sum="$(bash "$runner" summarize --out "$tmp/r1" 2>&1)"; code=$?
 assert_exit 0 "$code" "AC-5 (EVAL): summarize exits 0"
 assert_contains "$sum" 'new' "AC-5 (EVAL): summary row per arm"
 assert_contains "$sum" '1260' "AC-5 (EVAL): summary reports mean tokens per arm"
+
+# --- AC-6 (EVAL): runner refuses on a failed dispatch instead of recording it as a result ---
+out="$(FAKE_MODE=limit run_replay "$tmp/r4")"; code=$?
+[[ $code -ne 0 ]] || fail "AC-6 (EVAL): a failed dispatch (usage limit / is_error) must stop the run"
+assert_contains "$out" 'dispatch failed' "AC-6 (EVAL): refusal names the failed dispatch"
+[[ "$(row_field "$tmp/r4/rows.tsv" verdict)" == error ]] || fail "AC-6 (EVAL): failed dispatch row is marked error"
 
 # --- AC-7: evaluator docs say it executes in throwaway copies and never edits the work tree
 for f in agents/lcd-evaluator.md skills/triage/references/closeout.md rules/lcd.md README.md; do
