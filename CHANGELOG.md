@@ -6,6 +6,32 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.22.0] — 2026-11-08
+
+### Added
+- **Evaluator replay instrument (#26).** `evals/replay-evaluator.sh` replays the `lcd-evaluator`
+  agent against a frozen set of closeouts under two plugin refs (old vs new prompt), so the code
+  under review stays constant and only the prompt varies.
+  - **Dataset:** `evals/evaluator-replay/` holds six D-028 closeouts, each truncated at the
+    commit its evaluator saw, with the original dispatch prompt and known-defect labels, plus a
+    no-test-command case.
+  - **What it records per run:** whether the work tree stayed unchanged, suite runs, `mktemp`
+    copies, fixed-path deletes, tokens, cost and the verdict.
+  - **Failures:** a failed run (usage limit, `is_error`) stops the replay instead of being
+    recorded as a result.
+
+### Not changed
+- **The evaluator prompt is unchanged.** A prompt that ran the suite and probed every AC with a
+  mutant in a throwaway copy was measured on the replay, with the merge bar fixed in advance:
+  - It challenged 18 of 18 closeouts (the current prompt: 8 of 18) at 1.40× the tokens.
+  - Every finding it made reproduced, and it caught the known checksum survivor 2 of 3 times
+    (current prompt: 0 of 3).
+  - It missed one challenge the original evaluator had raised: 0 of 3, where the bar needed at
+    least 2 of 3. The current prompt also scored 0 of 3 on it.
+
+  Because the bar failed, the prompt was not shipped. Results:
+  `evals/results.md` and `evals/quality/2026-11-08-evaluator-replay.md`.
+
 ## [0.21.1] — 2026-11-08
 
 ### Fixed
