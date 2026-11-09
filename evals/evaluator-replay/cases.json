@@ -113,5 +113,18 @@
       "timestamp-bracket"
     ],
     "d028_verdict": "challenged"
+  },
+  {
+    "id": "no-test-command",
+    "bundle": "bundles/no-test-command.bundle",
+    "refs": {
+      "main": "5af6d64"
+    },
+    "checkout": "main",
+    "prompt": "prompts/no-test-command.md",
+    "known_defects": [],
+    "d028_found": [],
+    "d028_verdict": null,
+    "note": "AC-4: standard-1 plus one commit declaring no test command (conventions keys n/a, no scripts.test)"
   }
 ]
