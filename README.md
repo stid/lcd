@@ -123,9 +123,8 @@ they can never break an un-onboarded project):
 - **Named agents** (`lcd-recon` / `lcd-implementer` / `lcd-reviewer` / `lcd-evaluator`) — the
   fan-out roles ship as definitions with restricted tools and baked-in digest contracts.
   `lcd-evaluator` is the opt-in independent checker (`closeout-evaluator: on`): a fresh context
-  that tries to refute a work-item's green suite at closeout by running the suite and a mutant per
-  AC in throwaway copies (it never edits the work tree), because the session that wrote the code
-  shouldn't get the last word on whether it's done.
+  that tries to refute a work-item's green suite at closeout, because the session that wrote the
+  code shouldn't get the last word on whether it's done.
 - **CI audit gate (opt-in at onboarding)** — a vendored GitHub Actions workflow enforces the
   cross-path audit on PRs for every contributor, not just well-behaved sessions.
 

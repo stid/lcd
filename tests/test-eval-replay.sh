@@ -169,16 +169,4 @@ out="$(FAKE_MODE=limit run_replay "$tmp/r4")"; code=$?
 assert_contains "$out" 'dispatch failed' "AC-6 (EVAL): refusal names the failed dispatch"
 [[ "$(row_field "$tmp/r4/rows.tsv" verdict)" == error ]] || fail "AC-6 (EVAL): failed dispatch row is marked error"
 
-# --- AC-7: evaluator docs say it executes in throwaway copies and never edits the work tree
-for f in agents/lcd-evaluator.md skills/triage/references/closeout.md rules/lcd.md README.md; do
-  c="$(cat "$plugin_root/$f")"
-  assert_contains "$c" 'never edits the work tree' "AC-7: $f states the work-tree guarantee"
-done
-assert_contains "$(cat "$plugin_root/agents/lcd-evaluator.md")" 'throwaway cop' "AC-7: agent names throwaway copies"
-assert_not_contains "$(cat "$plugin_root/agents/lcd-evaluator.md")" 'You are read-only' "AC-7: agent no longer read-only"
-assert_not_contains "$(cat "$plugin_root/skills/triage/references/closeout.md")" '(read-only, fresh context)' \
-  "AC-7: closeout no longer calls the evaluator read-only"
-assert_not_contains "$(grep 'lcd-evaluator' "$plugin_root/rules/lcd.md")" 'read-only closeout' \
-  "AC-7: rules/lcd.md role text updated"
-
 echo "test-eval-replay: all assertions passed"

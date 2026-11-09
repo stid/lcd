@@ -16,8 +16,7 @@ lcd-triage-log.sh closeout --root <artifact-root> --slug <slug> --lane <Standard
 ```
 
 - **Before appending — only when `closeout-evaluator: on`:** dispatch the plugin's
-  `lcd-evaluator` agent (fresh context; never edits the work tree: it runs the suite and mutant
-  probes in throwaway copies) with the slug, artifact root, ACs, and the
+  `lcd-evaluator` agent (read-only, fresh context) with the slug, artifact root, ACs, and the
   baseline..HEAD diff range; it attempts to refute the green suite. Record the verdict in the
   JOURNAL LOG (`evaluator: stands` / `evaluator: challenged (<n> findings)` + findings
   verbatim) and present findings **before** suggesting any PR. Advisory — but on `challenged`
