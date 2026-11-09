@@ -23,7 +23,7 @@ cite them for traceability.
 ### Not changed
 - **The evaluator prompt is unchanged.** A prompt that ran the suite and probed every AC with a
   mutant in a throwaway copy was measured on the replay, with the merge bar fixed in advance:
-  - It challenged 18 of 18 closeouts (the current prompt: 8 of 18) at 1.40× the tokens.
+  - It challenged 17 of 18 closeouts (the current prompt: 8 of 18) at 1.40× the tokens.
   - Every finding it made reproduced, and it caught the known checksum survivor 2 of 3 times
     (current prompt: 0 of 3).
   - It missed one challenge the original evaluator had raised: 0 of 3, where the bar needed at

@@ -221,8 +221,8 @@ per-case graders that reproduced every finding.
 | | old | new |
 |---|---|---|
 | mean tokens / dispatch (D-028 cases) | 130.8k | 183.1k (1.40×) |
-| mean cost / dispatch | $1.12 | ~$1.41 |
-| `challenged` | 8/18 | 18/18 |
+| mean cost / dispatch | $1.12 | $1.45 |
+| `challenged` | 8/18 | 17/18 |
 | tree unchanged | 18/18 | 21/21 |
 | new findings not reproduced | — | 0 |
 | known survivor checksum-first-record (standard-3) | 0/3 | 2/3 (gap-level) |
