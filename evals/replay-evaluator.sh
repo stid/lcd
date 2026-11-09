@@ -165,12 +165,15 @@ for c in $case_ids; do
   tmpl="$(cat "$dataset/$(jq -r --arg c "$c" '.[] | select(.id == $c) | .prompt' "$manifest")")"
   checkout="$(jq -r --arg c "$c" '.[] | select(.id == $c) | .checkout' "$manifest")"
   refs="$(jq -r --arg c "$c" '.[] | select(.id == $c) | .refs | to_entries[] | "\(.key)=\(.value)"' "$manifest")"
+  checkout_sha="$(jq -r --arg c "$c" '.[] | select(.id == $c) | .refs[.checkout]' "$manifest")"
   for rep in $(seq 1 "$reps"); do
     for a in $arm_list; do
       arm="${a%%:*}"; base="$out/$c/$arm-$rep"
       ws_parent="$(mktemp -d "${TMPDIR:-/tmp}/lcd-replay-XXXXXX")"; ws="$ws_parent/w"
-      git clone -q "$bundle" "$ws" 2>/dev/null || refuse "cannot clone bundle for case $c"
-      git -C "$ws" checkout -q --detach
+      git clone -q --no-checkout "$bundle" "$ws" 2>/dev/null || refuse "cannot clone bundle for case $c"
+      # Bundles carry no HEAD, so detach at the case's checkout commit explicitly (independent of
+      # the operator's init.defaultBranch), then point every case ref and check the ref out.
+      git -C "$ws" checkout -q --detach "$checkout_sha"
       for r in $refs; do git -C "$ws" branch -q -f "${r%%=*}" "${r#*=}"; done
       git -C "$ws" checkout -q "$checkout"
       git -C "$ws" remote remove origin
