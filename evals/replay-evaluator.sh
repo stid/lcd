@@ -197,7 +197,9 @@ for c in $case_ids; do
             (($u.input_tokens // 0) + ($u.cache_read_input_tokens // 0)
               + ($u.cache_creation_input_tokens // 0) + ($u.output_tokens // 0)),
             ($r.total_cost_usd // 0),
-            (($r.result // "") | ascii_downcase | [scan("challenged|stands")] | first // "unknown") ]
+            (($r.result // "") | ascii_downcase
+              | ([scan("verdict[^a-z]*(challenged|stands)")] | first | .[0]?)
+                // ([scan("challenged|stands")] | first) // "unknown") ]
         | @tsv' "$base.jsonl" 2>/dev/null)" || metrics="$(printf '0\t0\t0\t0\t0\t0\t0\t0\t0\tunknown')"
       jq -rs '
         (map(select(.type == "user") | .message.content[]? | select(.type == "tool_result")

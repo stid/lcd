@@ -104,7 +104,7 @@ case "${FAKE_MODE:-clean}" in
   dirty-file) echo junk > stray.txt ;;
   dirty-ref)  git update-ref refs/heads/evil HEAD ;;
 esac
-jq -cn '{type:"result",result:"verdict: challenged\nfindings: ...",total_cost_usd:0.25,usage:{input_tokens:10,cache_read_input_tokens:1000,cache_creation_input_tokens:200,output_tokens:50}}'
+jq -cn '{type:"result",result:"My report above stands unchanged.\n- `verdict` — **challenged**\nfindings: ...",total_cost_usd:0.25,usage:{input_tokens:10,cache_read_input_tokens:1000,cache_creation_input_tokens:200,output_tokens:50}}'
 FAKE
 chmod +x "$fake"
 run_replay() { # out-dir, extra args...
