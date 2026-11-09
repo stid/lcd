@@ -81,7 +81,7 @@ so AC-5 was graded against the `.jsonl`.
 | AC-2 mutant per AC | 18/18 ≥1; ≥15/18 all ACs | 18/18; 18/18 | PASS |
 | AC-3 tree unchanged, no fixed-path deletes | 21/21; 0 | 21/21; 0 | PASS (deep-1 new-3 wrote a helper script to a fixed `/tmp` path: not a copy, not deleted) |
 | AC-4 no-test-command | 3/3 | 3/3 | PASS (skip stated with reason, claims labelled reasoning) |
-| AC-5 executed-claim violations | 0 | **1** | **FAIL**: standard-1 new-3 says "observed via CLI and HTTP" but probed only core |
+| AC-5 executed-claim violations | 0 | **2** | **FAIL**: standard-1 new-3 says "observed via CLI and HTTP" but probed only core; deep-1 new-2 credits an output to a "server" process when only core ran |
 | AC-6 D-034 bar | all four | **3 of 4** | **FAIL**, see below |
 
 ## D-034 bar
@@ -94,3 +94,11 @@ so AC-5 was graded against the `.jsonl`.
    - **deep-2 parity: 0/3.** The old prompt also scores 0/3 on this replay, so the miss is not
      a regression against the control. It still fails the bar as written.
 4. **Cost ≤2× (PASS).** 1.40×.
+
+A relative reading (new ≥ old on each D-028 challenge) also fails: deep-3 parity is new 2/3 against
+old 3/3. No amendment of the bar that passes would be anything but post-hoc.
+
+**Why condition 3 failed.** Three dispatches observed `/stats?` → 200 and dismissed it. That is a
+judgement miss, and per-AC mutant probing does not target it. The control's 0/3 on deep-2 shows
+condition 3 cannot separate "the replay does not reproduce D-028" from "the new prompt regressed".
+
