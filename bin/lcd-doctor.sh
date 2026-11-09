@@ -108,11 +108,28 @@ if [[ -n "$root" ]] && ! is_placeholder "$root"; then
   fi
 fi
 
-# --- CLAUDE.md pointer ----------------------------------------------------------
-if [[ -f "$proj/CLAUDE.md" ]] && grep -q 'lcd:triage' "$proj/CLAUDE.md"; then
-  ok "CLAUDE.md: LCD pointer present"
+# --- LCD pointer, judged by what Claude Code actually loads ----------------------
+# Claude Code (>= 2.1.277) reads AGENTS.md only when there is no CLAUDE.md, or when
+# CLAUDE.md imports it with `@AGENTS.md`. A pointer Claude never loads doesn't count.
+claude_md="$proj/CLAUDE.md"
+agents_md="$proj/AGENTS.md"
+has_pointer() { [[ -f "$1" ]] && grep -q 'lcd:triage' "$1"; }
+imports_agents=0
+[[ -f "$claude_md" ]] && grep -qE '(^|[[:space:]])@(\./)?AGENTS\.md([[:space:]]|$)' "$claude_md" \
+  && imports_agents=1
+
+if has_pointer "$claude_md"; then
+  ok "pointer: LCD pointer present in CLAUDE.md"
+elif [[ -f "$claude_md" && $imports_agents -eq 1 ]] && has_pointer "$agents_md"; then
+  ok "pointer: LCD pointer present in AGENTS.md (imported by CLAUDE.md)"
+elif [[ ! -f "$claude_md" ]] && has_pointer "$agents_md"; then
+  ok "pointer: LCD pointer present in AGENTS.md (no CLAUDE.md, so Claude Code reads AGENTS.md)"
 else
-  warn "CLAUDE.md: no LCD pointer — triage won't be suggested on new work (re-run /lcd:onboard)"
+  warn "pointer: no LCD pointer that Claude Code loads — triage won't be suggested on new work (re-run /lcd:onboard)"
+fi
+
+if [[ -f "$claude_md" && -f "$agents_md" && $imports_agents -eq 0 ]]; then
+  warn "AGENTS.md: Claude Code doesn't read it while CLAUDE.md exists — add a line '@AGENTS.md' to CLAUDE.md if its instructions should apply to Claude"
 fi
 
 # --- placement vs discovery glob (cheap heuristic) -------------------------------

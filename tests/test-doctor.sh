@@ -134,4 +134,35 @@ assert_exit 0 "$code" "docs-only project passes"
 assert_contains "$out" "doctor: 0 FAIL, 0 WARN" "n/a test keys produce no WARN"
 assert_not_contains "$out" "may not match discovery glob" "placement heuristic skipped for n/a"
 
+# --- AC-1 (CLI) / AC-2 (CLI): the pointer check follows what Claude Code loads ----------
+# Claude Code (>= 2.1.277) reads AGENTS.md only when no CLAUDE.md exists, or when CLAUDE.md
+# imports it with `@AGENTS.md`. A pointer that Claude never loads is not a pointer.
+pointer='## LCD\nlcd:triage routes new work.\n'
+
+rm -f "$proj/CLAUDE.md" "$proj/AGENTS.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "WARN — pointer" "AC-1 (CLI) no instruction file at all warns"
+
+printf "$pointer" > "$proj/AGENTS.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "OK   — pointer" "AC-1 (CLI) AGENTS.md-only pointer is loaded by Claude"
+assert_contains "$out" "doctor: 0 FAIL, 0 WARN" "AC-2 (CLI) AGENTS.md alone raises no shadowing warning"
+
+printf '# Project\nBuild with make.\n' > "$proj/CLAUDE.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "WARN — pointer" "AC-1 (CLI) pointer only in a shadowed AGENTS.md warns"
+assert_contains "$out" "WARN — AGENTS.md" "AC-2 (CLI) CLAUDE.md without the import shadows AGENTS.md"
+
+printf '@AGENTS.md\n\n# Project\nBuild with make.\n' > "$proj/CLAUDE.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "OK   — pointer" "AC-1 (CLI) pointer reached through the @AGENTS.md import"
+assert_not_contains "$out" "WARN — AGENTS.md" "AC-2 (CLI) importing CLAUDE.md does not shadow"
+
+printf "$pointer" > "$proj/CLAUDE.md"
+printf '# Shared rules\nUse tabs.\n' > "$proj/AGENTS.md"
+out="$(run_doctor)"; code=$?
+assert_contains "$out" "OK   — pointer" "AC-1 (CLI) pointer in CLAUDE.md is loaded"
+assert_contains "$out" "WARN — AGENTS.md" "AC-2 (CLI) both files, no import, still warns"
+rm -f "$proj/AGENTS.md"
+
 exit 0
