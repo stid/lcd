@@ -1,7 +1,6 @@
 ---
 name: triage
 description: Lean Context Development triage. Use when starting non-trivial new work in any LCD-onboarded project — a new feature, a multi-file change, a refactor that alters architecture, or anything you'd want a fresh session to pick up cold. Scores the work, picks a lane (Quick / Standard / Deep), states it in one line, and routes. Not for typo fixes, single-line edits, dependency bumps, formatting, or a bug fix whose cause is already known.
-user-invocable: true
 ---
 
 # LCD Triage (the front door)

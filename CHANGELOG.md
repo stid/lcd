@@ -6,6 +6,29 @@ All notable changes to this project are documented here. Format loosely follows
 Development is tracked by decision IDs (`D-NNN`) in the project's internal decision log; entries
 cite them for traceability.
 
+## [0.21.1] — 2026-11-08
+
+### Fixed
+- **Onboard no longer hides a project's `AGENTS.md` (#25).** Claude Code 2.1.277 and later reads
+  `AGENTS.md` only when there is no `CLAUDE.md`, or when `CLAUDE.md` imports it with `@AGENTS.md`.
+  Onboard used to create a bare `CLAUDE.md` in projects that had only `AGENTS.md`, which silently
+  dropped their instructions from Claude sessions. It now creates `CLAUDE.md` with the import and
+  puts the pointer in `AGENTS.md`, so it loads once. When both files exist without the import,
+  onboard says so and leaves the choice to you.
+- **Doctor checks the pointer Claude actually loads (#25).** The pointer counts in `CLAUDE.md`, in
+  an imported `AGENTS.md`, or in `AGENTS.md` when there is no `CLAUDE.md`. A new WARN fires when
+  `CLAUDE.md` exists and doesn't import an existing `AGENTS.md`. Projects onboarded earlier with
+  both files may see this WARN: add `@AGENTS.md` to `CLAUDE.md` if its instructions should apply.
+- **Doc claims (#27).** README no longer presents LCD's eval harness as the answer to a field-wide
+  gap (other frameworks now publish process evals), and explains how Claude Code picks between
+  `CLAUDE.md` and `AGENTS.md`. Onboard's note on instruction-file research now states the measured
+  effect (small; developer-written beats LLM-written; both add cost).
+
+### Changed
+- **Skill frontmatter (#28):** dropped `user-invocable: true` from five skills. It is the default,
+  and the Agent Skills spec's validator rejects fields it doesn't define. `redgreen-loop` keeps
+  `user-invocable: false`.
+
 ## [0.21.0] — 2026-10-24
 
 ### Added

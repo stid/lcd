@@ -1,7 +1,6 @@
 ---
 name: refine
 description: Autonomously correct a LCD work-item's plan when reality drifts from it — a STEP/task that's now wrong, a task that needs splitting, a MAP zone/invariant that no longer matches the code, or stale knowledge. Updates the artifact AND logs the change without waiting to be asked. Use mid-work when you notice the recorded plan no longer matches what the work actually needs.
-user-invocable: true
 ---
 
 # LCD Refine
