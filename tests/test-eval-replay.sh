@@ -89,8 +89,9 @@ printf '[{"id":"syn","bundle":"bundles/syn.bundle","refs":{"main":"%s"},"checkou
 fake="$tmp/fake-claude"
 cat > "$fake" <<'FAKE'
 #!/usr/bin/env bash
-# Fake model CLI: records its argv, performs FAKE_MODE side effects, emits stream-json.
-printf '%s\n' "$@" > "${FAKE_ARGV:-/dev/null}"
+# Fake model CLI: records argv + the stdin prompt, performs FAKE_MODE side effects, emits stream-json.
+[[ "${1:-}" == --version ]] && { echo "fake-claude 0.0"; exit 0; }
+{ printf '%s\n' "$@"; cat; } > "${FAKE_ARGV:-/dev/null}"
 emit_bash() { # id, command, output
   jq -cn --arg id "$1" --arg c "$2" '{type:"assistant",message:{id:("m"+$id),content:[{type:"tool_use",id:$id,name:"Bash",input:{command:$c}}]}}'
   jq -cn --arg id "$1" --arg o "$3" '{type:"user",message:{content:[{type:"tool_result",tool_use_id:$id,content:$o}]}}'
