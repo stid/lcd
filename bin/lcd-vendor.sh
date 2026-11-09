@@ -125,7 +125,11 @@ for d in "$src"/skills/*/; do
   n="$(basename "$d")"
   (cd "$d" && find . -type f) | while read -r f; do put "$d$f" ".claude/skills/lcd-$n/${f#./}"; done
 done
-for f in "$src"/commands/*.md; do put "$f" ".claude/commands/lcd-$(basename "$f")"; done
+# vendor.md is plugin-only: it drives this script, which a frozen copy doesn't carry
+# (a frozen copy updates through lcd-update instead).
+for f in "$src"/commands/*.md; do
+  [[ "$(basename "$f")" == "vendor.md" ]] || put "$f" ".claude/commands/lcd-$(basename "$f")"
+done
 put "$src/templates/vendor/lcd-update.md" ".claude/commands/lcd-update.md"
 for f in "$src"/agents/*.md; do put "$f" ".claude/agents/$(basename "$f")"; done
 
