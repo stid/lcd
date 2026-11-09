@@ -1,0 +1,117 @@
+[
+  {
+    "id": "standard-1",
+    "bundle": "bundles/standard-1.bundle",
+    "refs": {
+      "main": "1ff2917"
+    },
+    "checkout": "main",
+    "prompt": "prompts/standard-1.md",
+    "known_defects": [],
+    "d028_found": [],
+    "d028_verdict": "stands"
+  },
+  {
+    "id": "standard-2",
+    "bundle": "bundles/standard-2.bundle",
+    "refs": {
+      "main": "71c26ac"
+    },
+    "checkout": "main",
+    "prompt": "prompts/standard-2.md",
+    "known_defects": [
+      {
+        "id": "lastUpdated-advance",
+        "oracle": "a getStats that freezes lastUpdated at the first add passes the suite (no test asserts it advances on a second add)"
+      }
+    ],
+    "d028_found": [
+      "lastUpdated-advance"
+    ],
+    "d028_verdict": "challenged"
+  },
+  {
+    "id": "standard-3",
+    "bundle": "bundles/standard-3.bundle",
+    "refs": {
+      "main": "fb4a9a8"
+    },
+    "checkout": "main",
+    "prompt": "prompts/standard-3.md",
+    "known_defects": [
+      {
+        "id": "checksum-first-record",
+        "oracle": "slice(1) on the checksum input survives the suite (27/27, verified 2026-11-08)"
+      }
+    ],
+    "d028_found": [],
+    "d028_verdict": "stands"
+  },
+  {
+    "id": "deep-1",
+    "bundle": "bundles/deep-1.bundle",
+    "refs": {
+      "main": "b9bb4bc",
+      "feat/stats-surfaces": "c7bbe61"
+    },
+    "checkout": "feat/stats-surfaces",
+    "prompt": "prompts/deep-1.md",
+    "known_defects": [],
+    "d028_found": [],
+    "d028_verdict": "stands"
+  },
+  {
+    "id": "deep-2",
+    "bundle": "bundles/deep-2.bundle",
+    "refs": {
+      "main": "678eb6e",
+      "feat/stats-surfaces": "6132f8d"
+    },
+    "checkout": "feat/stats-surfaces",
+    "prompt": "prompts/deep-2.md",
+    "known_defects": [
+      {
+        "id": "checksum-count-only",
+        "oracle": "a checksum over the record count only survives the suite (28/28 in D-028)"
+      },
+      {
+        "id": "stats-empty-query-parity",
+        "oracle": "GET /stats? (and /stats?&) answers 200 while the CLI refuses the equivalent empty argument"
+      }
+    ],
+    "d028_found": [
+      "checksum-count-only",
+      "stats-empty-query-parity"
+    ],
+    "d028_verdict": "challenged"
+  },
+  {
+    "id": "deep-3",
+    "bundle": "bundles/deep-3.bundle",
+    "refs": {
+      "main": "404967c",
+      "feat/stats-surfaces": "bcb0142"
+    },
+    "checkout": "feat/stats-surfaces",
+    "prompt": "prompts/deep-3.md",
+    "known_defects": [
+      {
+        "id": "checksum-first-record",
+        "oracle": "slice(1) on the checksum input survives the suite (27/27, verified 2026-11-08)"
+      },
+      {
+        "id": "stats-empty-query-parity",
+        "oracle": "GET /stats? (and /stats?&) answers 200 while the CLI refuses the equivalent empty argument"
+      },
+      {
+        "id": "timestamp-bracket",
+        "oracle": "a lastUpdated computed at request time passes the AC-2/AC-7 timestamp-bracket tests"
+      }
+    ],
+    "d028_found": [
+      "stats-empty-query-parity",
+      "timestamp-bracket"
+    ],
+    "d028_verdict": "challenged"
+  }
+]
