@@ -208,3 +208,40 @@ quality; T1b needs a non-toy fixture.
 checker that caught real defects in half its runs; the Deep pipeline costs ~4.2× and buys no
 single-shot quality over either. LCD's single-shot case is the evaluator, not the process
 weight; its multi-session case is still the open measurement.
+
+## Evaluator replay (2026-11-08): stid/lcd#26, harness D-034 → bar FAILS (condition 3)
+
+This is a replay of the six D-028 closeouts at the state each evaluator saw. The arms are the
+current agent prompt (old, `main`) and the "Demonstrate, don't argue" prompt (new). It ran 3 reps
+per arm, plus a no-test-command case under the new prompt (3 reps), on `claude-fable-5-1` with
+CLI 2.1.319. The dataset is `evals/evaluator-replay/` and the runner is
+`evals/replay-evaluator.sh`. Scoring is in `evals/quality/2026-11-08-evaluator-replay.md`, done by
+per-case graders that reproduced every finding.
+
+| | old | new |
+|---|---|---|
+| mean tokens / dispatch (D-028 cases) | 130.8k | 183.1k (1.40×) |
+| mean cost / dispatch | $1.12 | $1.45 |
+| `challenged` | 8/18 | 17/18 |
+| tree unchanged | 18/18 | 21/21 |
+| new findings not reproduced | — | 0 |
+| known survivor checksum-first-record (standard-3) | 0/3 | 2/3 (gap-level) |
+| D-028 challenges ≥2/3: standard-2 `lastUpdated` · deep-2 parity · deep-3 parity | 2/3 · 0/3 · 3/3 | 3/3 · **0/3** · 2/3 |
+
+**D-034 bar:**
+1. Recall: PASS.
+2. Precision: PASS.
+3. No recall regression: **FAIL** (deep-2 parity 0/3; the control is also 0/3).
+4. Cost: PASS.
+
+The plan's AC-5 (0 executed-claim violations) also fails, at 2 of 21.
+
+**Residuals:**
+- **Main-thread evaluator.** `--agent` runs the evaluator as the main thread, so the plugin's
+  Stop hooks fire and make it restate its report. This affects both arms equally, and the
+  verdict parse was fixed in d8863d4.
+- **Truncated logs.** `.commands.txt` truncates long output, so AC-5 was graded against `.jsonl`.
+- **Undercount.** `suite_runs` undercounts `--test-reporter` runs.
+- **Replay artifact.** `audit.md` was untracked at D-028 time, so it is absent from the bundles.
+- **Scale.** n=3 per arm, one fixture task, one model.
+
